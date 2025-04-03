@@ -1,0 +1,80 @@
+{
+  "Rooms": [
+    {
+      "RoomTitle": "Grand Foyer",
+      "RoomDescription": "A magnificent entrance hall with a sweeping marble staircase. Crystal chandeliers cast dancing shadows on the walls, and ancient family portraits seem to watch your every move."
+    },
+    {
+      "RoomTitle": "Library",
+      "RoomDescription": "Floor-to-ceiling bookshelves line the walls, filled with leather-bound tomes. A half-empty glass of wine sits on an antique desk, as if someone left in a hurry."
+    },
+    {
+      "RoomTitle": "Conservatory",
+      "RoomDescription": "Moonlight filters through the glass ceiling onto exotic plants. A grand piano stands in the corner, its keys faintly stained with what looks like red wine... or is it?"
+    },
+    {
+      "RoomTitle": "Master Bedroom",
+      "RoomDescription": "A four-poster bed dominates the room, its silk curtains torn. A jewelry box lies open on the vanity, its contents scattered as if searched in haste."
+    },
+    {
+      "RoomTitle": "Kitchen",
+      "RoomDescription": "Copper pots hang from the ceiling in this vast kitchen. The hearth still smolders, and a knife is missing from the block on the counter."
+    },
+    {
+      "RoomTitle": "Study",
+      "RoomDescription": "Dark wood paneling and a massive fireplace give this room a somber atmosphere. The safe behind the portrait stands open and empty."
+    },
+    {
+      "RoomTitle": "Dining Hall",
+      "RoomDescription": "An enormous table set for dinner stretches through the room. One chair is knocked over, and a napkin bears a hastily scrawled note."
+    },
+    {
+      "RoomTitle": "Wine Cellar",
+      "RoomDescription": "Rows of dusty wine bottles fill the stone-walled cellar. One rack appears to have been recently disturbed, and footprints lead to a darker corner."
+    },
+    {
+      "RoomTitle": "Armory",
+      "RoomDescription": "Medieval weapons and armor decorate the walls. A display case's glass is shattered, and a valuable sword is conspicuously absent."
+    },
+    {
+      "RoomTitle": "Portrait Gallery",
+      "RoomDescription": "A long hallway lined with generations of family portraits. The most recent portrait is slashed, and something glints behind the damaged canvas."
+    },
+    {
+      "RoomTitle": "Secret Passage",
+      "RoomDescription": "A narrow corridor hidden behind a bookcase. Dust-covered footprints suggest recent activity, and a mysterious draft whispers through cracks in the walls."
+    },
+    {
+      "RoomTitle": "Servants' Quarters",
+      "RoomDescription": "A modest living area with several small rooms. One bed is unmade, and a half-packed suitcase suggests someone left in a hurry."
+    },
+    {
+      "RoomTitle": "Greenhouse",
+      "RoomDescription": "A glass-walled sanctuary filled with rare plants. Some pots are overturned, and a trail of soil leads to a broken window."
+    },
+    {
+      "RoomTitle": "Ballroom",
+      "RoomDescription": "A grand space with a polished wooden floor and gilded mirrors. A single crystal slipper lies abandoned near the entrance."
+    },
+    {
+      "RoomTitle": "Tower Room",
+      "RoomDescription": "A circular chamber at the top of the mansion. A telescope points toward the horizon, and scattered star charts suggest recent observations."
+    },
+    {
+      "RoomTitle": "Game Room",
+      "RoomDescription": "A cozy space with billiards table and card tables. A game of chess is mid-play, but the pieces are scattered as if knocked over in anger."
+    },
+    {
+      "RoomTitle": "Chapel",
+      "RoomDescription": "A small private chapel with stained glass windows. The altar is disturbed, and a mysterious symbol is carved into the wooden pew."
+    },
+    {
+      "RoomTitle": "Observatory",
+      "RoomDescription": "A domed room with a massive telescope. Astronomical charts are spread across a desk, with certain constellations marked in red ink."
+    },
+    {
+      "RoomTitle": "Secret Laboratory",
+      "RoomDescription": "A hidden room filled with scientific equipment. Strange formulas are scrawled on the walls, and a bubbling beaker suggests recent activity."
+    }
+  ]
+}

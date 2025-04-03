@@ -1,0 +1,162 @@
+@startuml Engine Project Structure
+
+package "Engine.Classes" {
+  enum EntityTypeEnum {
+    OBJECT
+    PLAYER
+  }
+
+  class Entity {
+    + EntityType: EntityTypeEnum
+    + EntityName: string
+    + Entity(type: EntityTypeEnum, entityName: string)
+  }
+
+  class EntityCollection {
+    + Entities: List<Entity>
+    + FindEntity(target: Entity): Entity?
+    + RemoveEntity(target: Entity): bool
+    + AddEntity(entity: Entity): void
+  }
+
+  class Player {
+    + Inventory: List<Item>
+    + Coords: Position
+    + ShowInventory(): void
+    + Player(type: EntityTypeEnum, entityName: string, inventory: List<Item>, coords: Position)
+  }
+
+  class Item {
+    + ItemDescription: string
+    + Item(type: EntityTypeEnum, entityName: string, description: string)
+  }
+
+  struct Position {
+    + PosX: int
+    + PosY: int
+    + Position(posX: int, posY: int)
+    + ToString(): string
+    + Equals(obj: object?): bool
+    + GetHashCode(): int
+    + operator ==(left: Position, right: Position): bool
+    + operator !=(left: Position, right: Position): bool
+  }
+
+  class World {
+    + TheWorldMap: WorldMap
+    + ThePlayer: Player
+    + IsGameRunning: bool
+    + World(player: Player)
+    + MovePlayer(newPosition: Position): bool
+    + EndGame(): void
+  }
+
+  class WorldMap {
+    + MapGrid: MapGrid
+    + MapLayout: Room[][]
+    + Rooms: List<Room>
+    + IsValidPosition(position: Position): bool
+    + GetGridByPosition(position: Position): Room?
+  }
+
+  class MapGrid {
+    + Grid: int[,]
+    + Width: int
+    + Height: int
+    + IsValidPosition(position: Position): bool
+  }
+
+  class Room {
+    + Items: List<Item>
+    + Coords: Position
+    + RoomTitle: string
+    + RoomDescription: string
+    + Room(entities: List<Entity>, coords: Position, title: string, description: string)
+  }
+}
+
+package "Engine.Library" {
+  class GameStateManager {
+    + {static} SaveGame(world: World): void
+    + {static} LoadGame(): World?
+  }
+
+  class GameState {
+    + PlayerName: string
+    + PlayerPosition: Position
+    + PlayerInventory: List<ItemState>
+    + Rooms: List<RoomState>
+  }
+
+  class ItemState {
+    + EntityName: string
+    + ItemDescription: string
+  }
+
+  class RoomState {
+    + Coords: Position
+    + RoomTitle: string
+    + RoomDescription: string
+    + Items: List<ItemState>
+  }
+
+  class Deserializer {
+    + {static} DeserializeWorld(): World
+  }
+
+  class Initializers {
+    + {static} MakeWorld(): WorldMap
+    + {static} MakeRooms(player: Player): List<Room>
+    + {static} MakeKey(worldMap: WorldMap): Item
+    + {static} MakeRandomItems(world: World, rooms: List<Room>): void
+    + {static} MakeExit(world: World): void
+  }
+
+  class InputParser {
+    + {static} ParseInput(input: string): Command
+    + {static} ValidateCommand(command: Command): bool
+  }
+
+  class Menu {
+    + {static} ShowMainMenu(): void
+    + {static} ShowGameMenu(): void
+    + {static} ShowHelp(): void
+  }
+
+  class DebugConfig {
+    + {static} VerboseMode: bool
+  }
+}
+
+' Relationships
+Entity <|-- Player
+Entity <|-- Item
+EntityCollection "1" *-- "many" Entity
+
+Player "1" *-- "many" Item
+Player "1" *-- "1" Position
+
+World "1" *-- "1" Player
+World "1" *-- "1" WorldMap
+
+WorldMap "1" *-- "1" MapGrid
+WorldMap "1" *-- "many" Room
+
+Room "1" *-- "many" Item
+Room "1" *-- "1" Position
+Room --|> EntityCollection
+
+GameStateManager ..> World : manages
+GameStateManager +-- GameState
+GameState +-- ItemState
+GameState +-- RoomState
+
+Deserializer ..> World : deserializes
+Initializers ..> World : initializes
+Initializers ..> WorldMap : creates
+Initializers ..> Room : creates
+InputParser ..> Player : controls
+Menu ..> GameStateManager : uses
+DebugConfig ..> World : configures
+
+@enduml 

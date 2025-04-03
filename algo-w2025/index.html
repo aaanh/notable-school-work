@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG Viewer with Drag Control</title>
+  <style>
+    .svg-container {
+      width: 100%;
+      height: 100vh;
+      border: 1px solid #ccc;
+      overflow: hidden;
+      position: relative;
+      background: #f5f5f5;
+    }
+
+    .svg-content {
+      position: absolute;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      transform-origin: 0 0;
+    }
+
+    .svg-content.dragging {
+      cursor: grabbing;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    button {
+      padding: 5px 15px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background: white;
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="svg-container">
+    <div id="svg-wrapper" class="svg-content"></div>
+  </div>
+  <div class="controls">
+    <button id="zoomIn">Zoom In (+)</button>
+    <button id="zoomOut">Zoom Out (-)</button>
+    <button id="reset">Reset</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const svgWrapper = document.getElementById('svg-wrapper');
+      let isDragging = false;
+      let currentX;
+      let currentY;
+      let initialX;
+      let initialY;
+      let xOffset = 0;
+      let yOffset = 0;
+      let scale = 1;
+
+      // Load SVG content
+      fetch('uml-diagram.svg')
+        .then(response => response.text())
+        .then(svgContent => {
+          svgWrapper.innerHTML = svgContent;
+          const svg = svgWrapper.querySelector('svg');
+          if (svg) {
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+          }
+        })
+        .catch(error => console.error('Error loading SVG:', error));
+
+      function dragStart(e) {
+        e.preventDefault();
+        if (e.type === "touchstart") {
+          initialX = e.touches[0].clientX - xOffset;
+          initialY = e.touches[0].clientY - yOffset;
+        } else {
+          initialX = e.clientX - xOffset;
+          initialY = e.clientY - yOffset;
+        }
+        isDragging = true;
+        svgWrapper.classList.add('dragging');
+      }
+
+      function dragEnd(e) {
+        e.preventDefault();
+        initialX = currentX;
+        initialY = currentY;
+        isDragging = false;
+        svgWrapper.classList.remove('dragging');
+      }
+
+      function drag(e) {
+        if (isDragging) {
+          e.preventDefault();
+
+          if (e.type === "touchmove") {
+            currentX = e.touches[0].clientX - initialX;
+            currentY = e.touches[0].clientY - initialY;
+          } else {
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+          }
+
+          xOffset = currentX;
+          yOffset = currentY;
+
+          updateTransform();
+        }
+      }
+
+      function updateTransform() {
+        svgWrapper.style.transform = `translate(${xOffset}px, ${yOffset}px) scale(${scale})`;
+      }
+
+      function zoomIn() {
+        const oldScale = scale;
+        const newScale = Math.min(scale * 1.5, 5);
+        if (newScale !== oldScale) {
+          const rect = svgWrapper.getBoundingClientRect();
+          const centerX = rect.left + (rect.width / 2);
+          const centerY = rect.top + (rect.height / 2);
+
+          const x = (centerX - rect.left) / oldScale;
+          const y = (centerY - rect.top) / oldScale;
+
+          scale = newScale;
+          xOffset = centerX - (x * newScale);
+          yOffset = centerY - (y * newScale);
+
+          updateTransform();
+        }
+      }
+
+      function zoomOut() {
+        const oldScale = scale;
+        const newScale = Math.max(scale / 1.5, 0.1);
+        if (newScale !== oldScale) {
+          const rect = svgWrapper.getBoundingClientRect();
+          const centerX = rect.left + (rect.width / 2);
+          const centerY = rect.top + (rect.height / 2);
+
+          const x = (centerX - rect.left) / oldScale;
+          const y = (centerY - rect.top) / oldScale;
+
+          scale = newScale;
+          xOffset = centerX - (x * newScale);
+          yOffset = centerY - (y * newScale);
+
+          updateTransform();
+        }
+      }
+
+      function reset() {
+        xOffset = 0;
+        yOffset = 0;
+        scale = 1;
+        updateTransform();
+      }
+
+      // Mouse events
+      svgWrapper.addEventListener('mousedown', dragStart, { passive: false });
+      document.addEventListener('mousemove', drag, { passive: false });
+      document.addEventListener('mouseup', dragEnd, { passive: false });
+
+      // Touch events
+      svgWrapper.addEventListener('touchstart', dragStart, { passive: false });
+      document.addEventListener('touchmove', drag, { passive: false });
+      document.addEventListener('touchend', dragEnd, { passive: false });
+
+      // Zoom controls
+      document.getElementById('zoomIn').addEventListener('click', zoomIn);
+      document.getElementById('zoomOut').addEventListener('click', zoomOut);
+      document.getElementById('reset').addEventListener('click', reset);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function (e) {
+        if (e.key === '=' || e.key === '+') {
+          zoomIn();
+        } else if (e.key === '-') {
+          zoomOut();
+        } else if (e.key === 'r') {
+          reset();
+        }
+      });
+
+      // Mouse wheel zoom
+      document.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        const zoomSensitivity = 0.1;
+        const delta = -Math.sign(e.deltaY) * zoomSensitivity;
+        const oldScale = scale;
+        const newScale = scale * (1 + delta);
+
+        // Limit scale between 0.1 and 5
+        if (newScale >= 0.1 && newScale <= 5) {
+          // Get mouse position relative to page
+          const mouseX = e.pageX;
+          const mouseY = e.pageY;
+
+          // Get current transformed position
+          const rect = svgWrapper.getBoundingClientRect();
+
+          // Calculate mouse position relative to element
+          const x = (mouseX - rect.left) / oldScale;
+          const y = (mouseY - rect.top) / oldScale;
+
+          // Update scale and offset
+          scale = newScale;
+          xOffset = mouseX - (x * newScale);
+          yOffset = mouseY - (y * newScale);
+
+          updateTransform();
+        }
+      }, { passive: false });
+    });
+  </script>
+</body>
+
+</html>

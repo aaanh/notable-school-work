@@ -1,0 +1,15 @@
+/Users/anh/repos/school-algo-final-project/bin/Debug/net9.0/engine
+/Users/anh/repos/school-algo-final-project/bin/Debug/net9.0/engine.deps.json
+/Users/anh/repos/school-algo-final-project/bin/Debug/net9.0/engine.runtimeconfig.json
+/Users/anh/repos/school-algo-final-project/bin/Debug/net9.0/engine.dll
+/Users/anh/repos/school-algo-final-project/bin/Debug/net9.0/engine.pdb
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.GeneratedMSBuildEditorConfig.editorconfig
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.AssemblyInfoInputs.cache
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.AssemblyInfo.cs
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.csproj.CoreCompileInputs.cache
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.sourcelink.json
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.dll
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/refint/engine.dll
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.pdb
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/engine.genruntimeconfig.cache
+/Users/anh/repos/school-algo-final-project/obj/Debug/net9.0/ref/engine.dll

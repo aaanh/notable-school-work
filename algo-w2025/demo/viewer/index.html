@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG Viewer</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div class="status">View Mode</div>
+  <div class="svg-container">
+    <div id="svg-wrapper" class="svg-content"></div>
+  </div>
+
+  <script>
+    class SVGViewer {
+      constructor() {
+        this.svgWrapper = document.getElementById('svg-wrapper');
+        this.statusElement = document.querySelector('.status');
+        this.ws = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+
+        // Use the host domain for WebSocket connection
+        this.serverUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+          window.location.host + '/ws';
+
+        console.log('Viewer initialized with server URL:', this.serverUrl);
+        console.log('Current hostname:', window.location.hostname);
+        console.log('Current pathname:', window.location.pathname);
+        this.init();
+      }
+
+      async init() {
+        await this.loadSVG();
+        this.connectWebSocket();
+      }
+
+      async loadSVG() {
+        try {
+          const response = await fetch('../uml-diagram.svg');
+          const svgContent = await response.text();
+          this.svgWrapper.innerHTML = svgContent;
+          const svg = this.svgWrapper.querySelector('svg');
+          if (svg) {
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+          }
+        } catch (error) {
+          console.error('Error loading SVG:', error);
+          this.updateStatus('Error loading SVG', true);
+        }
+      }
+
+      connectWebSocket() {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          console.log('WebSocket already connected');
+          return;
+        }
+
+        console.log('Attempting WebSocket connection to:', this.serverUrl);
+        this.ws = new WebSocket(this.serverUrl);
+
+        this.ws.onopen = () => {
+          console.log('WebSocket connection established');
+          this.reconnectAttempts = 0;
+          this.updateStatus('Connected');
+        };
+
+        this.ws.onclose = (event) => {
+          console.log('WebSocket connection closed. Code:', event.code, 'Reason:', event.reason);
+          this.updateStatus('Disconnected - Reconnecting...', true);
+
+          // Try to reconnect with exponential backoff
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
+            console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
+            setTimeout(() => {
+              this.reconnectAttempts++;
+              this.connectWebSocket();
+            }, delay);
+          } else {
+            this.updateStatus('Connection failed - Please refresh', true);
+          }
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          this.updateStatus('Connection Error', true);
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            console.log('Received message:', event.data);
+            const message = JSON.parse(event.data);
+            if (message.type === 'state-update') {
+              console.log('Applying state update:', message.state);
+              this.applyState(message.state);
+            } else {
+              console.log('Received unknown message type:', message.type);
+            }
+          } catch (error) {
+            console.error('Error processing message:', error);
+            this.updateStatus('Error processing message', true);
+          }
+        };
+      }
+
+      applyState(state) {
+        console.log('Applying state:', state);
+        requestAnimationFrame(() => {
+          this.svgWrapper.style.transform = `translate(${state.xOffset}px, ${state.yOffset}px) scale(${state.scale})`;
+        });
+      }
+
+      updateStatus(message, isError = false) {
+        this.statusElement.textContent = message;
+        if (isError) {
+          this.statusElement.classList.add('connection-error');
+        } else {
+          this.statusElement.classList.remove('connection-error');
+        }
+      }
+    }
+
+    // Initialize the viewer when the DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      new SVGViewer();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+{
+  "Items": [
+    {
+      "EntityName": "Sword",
+      "ItemDescription": "It probably had seen more combat, parties and women than you ever had."
+    },
+    {
+      "EntityName": "Pistol",
+      "ItemDescription": "Looks like it is still usable. Just need to find some gunpowder and a bullet."
+    },
+    {
+      "EntityName": "Gold bar",
+      "ItemDescription": "You can pay rent for the next month and maybe afford some instant noodles."
+    },
+    {
+      "EntityName": "Food",
+      "ItemDescription": "A tin can that has Food written on it."
+    },
+    {
+      "EntityName": "Hat",
+      "ItemDescription": "A hat that looks like those from Peaky Blinders."
+    },
+    {
+      "EntityName": "Letter",
+      "ItemDescription": "Yo skibidi, what's the vibe? We ain't ever sliding back here fr. I swear they got wall hacks or something. Tell 'em to chill!"
+    },
+    {
+      "EntityName": "Knife",
+      "ItemDescription": "Best thing you can do with this is peel 2 apples. Can't even end your misery with it."
+    }
+  ]
+}

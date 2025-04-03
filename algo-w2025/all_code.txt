@@ -1,0 +1,1256 @@
+/**
+ * Filename: license.src.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+
+// Console.WriteLine(@" ____                 _                       _             _ ");
+// Console.WriteLine(@"|  _ \ __ _ _ __   __| | ___  _ __  _ __ ___ (_)_______  __| |");
+// Console.WriteLine(@"| |_) / _` | '_ \ / _` |/ _ \| '_ \| '_ ` _ \| |_  / _ \/ _` |");
+// Console.WriteLine(@"|  _ < (_| | | | | (_| | (_) | | | | | | | | | |/ /  __/ (_| |");
+// Console.WriteLine(@"|_| \_\__,_|_| |_|\__,_|\___/|_| |_|_| |_| |_|_/___\___|\__,_|");
+// Console.WriteLine(@"                 _                                            ");
+// Console.WriteLine(@"        /\      | |                 _                         ");
+// Console.WriteLine(@"       /  \   _ | |_   _ ____ ____ | |_ _   _  ____ ____      ");
+// Console.WriteLine(@"      / /\ \ / || | | | / _  )  _ \|  _) | | |/ ___) _  )     ");
+// Console.WriteLine(@"     | |__| ( (_| |\ V ( (/ /| | | | |_| |_| | |  ( (/ /      ");
+// Console.WriteLine(@"     |______|\____| \_/ \____)_| |_|\___)____|_|   \____)     ");/**
+ * Filename: World.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+using Engine.Classes;
+using Engine.Library;
+
+namespace Engine.Classes;
+
+public class World
+{
+  public WorldMap TheWorldMap { get; }
+  public Player ThePlayer { get; }
+  public bool IsGameRunning { get; private set; } = true;
+
+  public World(Player player)
+  {
+    ThePlayer = player;
+    TheWorldMap = Initializer.MakeWorld();
+
+    // Initialize rooms
+    List<Room> rooms = Initializer.MakeRooms(player);
+
+    foreach (var room in rooms)
+    {
+      int x = room.Coords.PosX;
+      int y = room.Coords.PosY;
+      TheWorldMap.MapLayout[y][x] = room;
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Added room '{room.RoomTitle}' at position {x},{y}");
+    }
+
+    // Add player to starting position
+    var startGrid = TheWorldMap.GetGridByPosition(player.Coords);
+    if (startGrid is Room startRoom)
+    {
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Player starting in room: {startRoom.RoomTitle}");
+    }
+    startGrid?.AddEntity(player);
+
+    // Create key item
+    _ = Initializer.MakeKey(TheWorldMap);
+    _ = Initializer.MakeRandomItems(this, rooms);
+    _ = Initializer.MakeExit(this);
+
+    if (DebugConfig.VerboseMode)
+    {
+      Console.WriteLine("Press any key to continue..."); // Give time to see debug info
+      Console.ReadKey(true);
+      Console.Clear();
+    }
+  }
+
+  public bool MovePlayer(Position newPosition)
+  {
+    if (!TheWorldMap.IsValidPosition(newPosition))
+    {
+      return false;
+    }
+
+    var currentGrid = TheWorldMap.GetGridByPosition(ThePlayer.Coords);
+    var newGrid = TheWorldMap.GetGridByPosition(newPosition);
+
+    if (currentGrid != null)
+    {
+      currentGrid.RemoveEntity(ThePlayer);
+    }
+
+    if (newGrid != null)
+    {
+      newGrid.AddEntity(ThePlayer);
+      ThePlayer.Coords = newPosition;
+      return true;
+    }
+
+    return false;
+  }
+
+  public void EndGame()
+  {
+    IsGameRunning = false;
+  }
+}
+/**
+ * Filename: MapGrid.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Classes;
+
+public class MapGrid(List<Entity> entities, Position coords)
+{
+  public List<Entity> Entities { get; set; } = entities;
+  public Position Coords { get; } = coords;
+  public bool IsExit = false;
+
+  public MapGrid(List<Entity> entities, Position coords, bool isExit) : this(entities, coords)
+  {
+    this.IsExit = isExit;
+  }
+
+  public bool AddEntity(Entity entity)
+  {
+    try
+    {
+      Entities.Add(entity);
+      return true;
+    }
+    catch
+    {
+      return false;
+    }
+  }
+
+  public bool RemoveEntity(Entity entity)
+  {
+    try
+    {
+      var toRemove = Entities.Find(x => x.EntityType == entity.EntityType && x.EntityName == entity.EntityName)
+          ?? throw new Exception("Entity not found");
+      return Entities.Remove(toRemove);
+    }
+    catch
+    {
+      return false;
+    }
+  }
+
+  public void PrintGrid(bool playerHasKey)
+  {
+    if (playerHasKey && this.IsExit) { Console.Write("[X]"); return; }
+    if (Entities.Count == 0)
+    {
+      if (this.GetType() == typeof(Room))
+      {
+        Console.Write("< >");
+      }
+      else
+      {
+        Console.Write("[ ]");
+      }
+    }
+    else
+    {
+      var entity = Entities[0]; // Show only the first entity in the cell
+      string symbol = entity.EntityType switch
+      {
+        EntityTypeEnum.PLAYER => "P",
+        EntityTypeEnum.OBJECT => "O",
+        _ => "?"
+      };
+      if (this.GetType() == typeof(Room))
+      {
+        Console.Write("<" + symbol + ">");
+      }
+      else
+      {
+
+        Console.Write($"[{symbol}]");
+      }
+    }
+  }
+}/**
+ * Filename: WorldMap.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Classes;
+
+public class WorldMap
+{
+  public List<List<MapGrid>> MapLayout { get; }
+
+  public WorldMap(List<List<MapGrid>> mapLayout)
+  {
+    MapLayout = mapLayout;
+  }
+
+  public void PrintMapLayout(bool playerHasKey = false)
+  {
+    // Print column numbers
+    Console.Write("   "); // Spacing for row numbers
+    for (int x = 0; x < MapLayout[0].Count; x++)
+    {
+      Console.Write($" {x} ");
+    }
+    Console.WriteLine();
+
+    /**
+     * Example map grid print layout
+          1  2  3  4  5  6
+          ------------------
+      1 |[ ][ ][ ][ ]<o>[ ]| 1
+      2 |[ ][ ][o][ ][ ][ ]| 2
+      3 |[ ][ ][ ][ ][x][ ]| 3
+      4 |[ ]< >[ ][P][ ][ ]| 4
+      5 |[ ][ ][ ][ ][ ][ ]| 5
+      6 |[ ][ ][ ][ ][ ][ ]| 6
+          ------------------
+          1  2  3  4  5  6
+     */
+
+    // Top border
+    Console.Write("   "); // Spacing for row nums
+    for (int x = 0; x < MapLayout[0].Count; x++)
+    {
+      Console.Write("---");
+    }
+    Console.WriteLine();
+
+    // Render rows
+    for (int y = 0; y < MapLayout.Count; y++)
+    {
+      Console.Write($"{y} |"); // Row number
+      foreach (var grid in MapLayout[y])
+      {
+        grid.PrintGrid(playerHasKey);
+      }
+      Console.WriteLine($"| {y}"); // Row number on the right
+    }
+
+    // Bottom border
+    Console.Write("   "); // Spacing for row nums
+    for (int x = 0; x < MapLayout[0].Count; x++)
+    {
+      Console.Write("---");
+    }
+    Console.WriteLine();
+
+    // Col num again
+    Console.Write("   "); // Spacing for row nums
+    for (int x = 0; x < MapLayout[0].Count; x++)
+    {
+      Console.Write($" {x} ");
+    }
+    Console.WriteLine();
+  }
+
+  public MapGrid? GetGridByPosition(Position coords)
+  {
+    return MapLayout.SelectMany(row => row)
+                  .FirstOrDefault(grid => grid.Coords.Equals(coords));
+  }
+
+  public bool IsValidPosition(Position position)
+  {
+    return position.PosX >= 0 && position.PosX < MapLayout[0].Count &&
+            position.PosY >= 0 && position.PosY < MapLayout.Count;
+  }
+}/**
+ * Filename: Room.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Classes;
+
+public class Room(List<Entity> entities, Position coords) : MapGrid(entities, coords)
+{
+  public string? RoomTitle { get; set; }
+  public string? RoomDescription { get; set; }
+  public Room(List<Entity> entities, Position coords, string roomTitle, string roomDescription)
+    : this(entities, coords)
+  {
+    RoomTitle = roomTitle ?? "Generic room";
+    RoomDescription = roomDescription ?? "A non-descript room. Nothing of interest seems to be here.";
+  }
+
+  public void PrintRoomInfo()
+  {
+    Console.WriteLine($"Room: {this.RoomTitle}");
+    Console.WriteLine($"{this.RoomDescription}");
+  }
+}/**
+ * Filename: Item.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Classes;
+
+public class Item(EntityTypeEnum entityType, string entityName, string description) : Entity(entityType, entityName)
+{
+  public string ItemDescription { get; set; } = description;
+}
+
+public class Inventory(List<Entity> items) : EntityCollection(items)
+{
+  public List<Item> Items { get; } = items.OfType<Item>().ToList();
+
+  public override Item? FindEntity(Entity target)
+  {
+    if (target is not Item searchItem)
+    {
+      return null;
+    }
+
+    return Items.FirstOrDefault(item =>
+        item.EntityType == searchItem.EntityType &&
+        item.EntityName == searchItem.EntityName);
+  }
+
+  public override bool RemoveEntity(Entity target)
+  {
+    var toRemove = FindEntity(target);
+    if (toRemove != null)
+    {
+      Items.Remove(toRemove);
+      return true;
+    }
+    return false;
+  }
+}/**
+ * Filename: Player.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+using Engine.Classes;
+
+namespace Engine.Classes;
+
+public class Player(EntityTypeEnum type, string entityName, List<Item> inventory, Position coords) : Entity(type, entityName)
+{
+  public List<Item> Inventory { get; set; } = inventory;
+  public Position Coords { get; set; } = coords;
+
+  public void ShowInventory()
+  {
+    Console.WriteLine("++++++++ Inventory ++++++++");
+    foreach (Item item in this.Inventory)
+    {
+      Console.Write($"+ {item.EntityName}");
+      if (Inventory.Count > 1) Console.Write($", ");
+    }
+    Console.WriteLine("\n+++++++++++++++++++++++++++");
+  }
+}
+/**
+ * Filename: Position.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Classes;
+
+public struct Position(int posX, int posY)
+{
+  public int PosX { get; set; } = posX;
+  public int PosY { get; set; } = posY;
+
+  public override readonly string ToString()
+  {
+    return $"{PosX},{PosY}";
+  }
+
+  public override readonly bool Equals(object? obj)
+  {
+    if (obj is Position other)
+    {
+      return PosX == other.PosX && PosY == other.PosY;
+    }
+    return false;
+  }
+
+  public override readonly int GetHashCode()
+  {
+    return HashCode.Combine(PosX, PosY);
+  }
+
+  public static bool operator ==(Position left, Position right)
+  {
+    return left.Equals(right);
+  }
+
+  public static bool operator !=(Position left, Position right)
+  {
+    return !(left == right);
+  }
+}/**
+ * Filename: Entity.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Classes;
+
+public enum EntityTypeEnum
+{
+  OBJECT,
+  PLAYER,
+}
+
+public class Entity
+{
+  public EntityTypeEnum EntityType { get; set; }
+  public string EntityName { get; set; }
+
+  public Entity(EntityTypeEnum type, string entityName)
+  {
+    EntityType = type;
+    EntityName = entityName;
+  }
+}
+
+public class EntityCollection(List<Entity> entities)
+{
+    public List<Entity> Entities { get; set; } = entities;
+
+    public virtual Entity? FindEntity(Entity target)
+  {
+    foreach (Entity entity in Entities)
+    {
+      if (entity.EntityType == target.EntityType && entity.EntityName == target.EntityName)
+      {
+        return entity;
+      }
+    }
+    return null;
+  }
+
+  public virtual bool RemoveEntity(Entity target)
+  {
+    Entity? toRemove = FindEntity(target);
+    if (toRemove != null)
+    {
+      Entities.Remove(toRemove);
+      Console.WriteLine($"Removed {target.EntityName}");
+      return true;
+    }
+    return false;
+  }
+}using System.Text.Json;
+
+namespace Engine.Library;
+
+// FOR DESERIALIZING FROM JSON ASSETS ONLY
+public class Deserializer
+{
+  public class RoomDefinition
+  {
+    public string RoomTitle { get; set; } = "";
+    public string RoomDescription { get; set; } = "";
+  }
+
+  public class RoomDefinitions
+  {
+    public List<RoomDefinition> Rooms { get; set; } = [];
+  }
+
+  public static List<RoomDefinition> LoadRoomDefinitions()
+  {
+    try
+    {
+      string jsonString = File.ReadAllText("assets/rooms.json");
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - JSON content: {jsonString}");
+      var roomDefs = JsonSerializer.Deserialize<RoomDefinitions>(jsonString);
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - Loaded {roomDefs?.Rooms.Count ?? 0} room definitions");
+      var result = roomDefs?.Rooms ?? [];
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - Returning {result.Count} rooms");
+      return result;
+    }
+    catch (Exception e)
+    {
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - Error loading rooms: {e.Message}");
+      return [];
+    }
+  }
+
+  public class ItemDefinition
+  {
+    public string EntityName { get; set; } = "";
+    public string ItemDescription { get; set; } = "";
+  }
+
+  public class ItemDefinitions
+  {
+    public List<ItemDefinition> Items { get; set; } = [];
+  }
+
+  public static List<ItemDefinition> LoadItemDefinitions()
+  {
+    try
+    {
+      string jsonString = File.ReadAllText("assets/items.json");
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - JSON content: {jsonString}");
+      var itemDefs = JsonSerializer.Deserialize<ItemDefinitions>(jsonString);
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - Loaded {itemDefs?.Items.Count ?? 0} item definitions");
+      var result = itemDefs?.Items ?? [];
+      return result;
+    }
+    catch (Exception e)
+    {
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - Error loading items: {e.Message}");
+      return [];
+    }
+  }
+}/**
+ * Filename: DebugConfig.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Library;
+
+public static class DebugConfig
+{
+  public static bool VerboseMode { get; set; } = false;
+}/**
+ * Filename: GameStateManager.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+using System.Text.Json;
+using Engine.Classes;
+
+namespace Engine.Library;
+
+public class GameStateManager
+{
+  private class GameState
+  {
+    public string PlayerName { get; set; } = "";
+    public Position PlayerPosition { get; set; }
+    public List<ItemState> PlayerInventory { get; set; } = [];
+    public List<RoomState> Rooms { get; set; } = [];
+  }
+
+  private class ItemState
+  {
+    public string EntityName { get; set; } = "";
+    public string ItemDescription { get; set; } = "";
+  }
+
+  private class RoomState
+  {
+    public Position Coords { get; set; }
+    public string RoomTitle { get; set; } = "";
+    public string RoomDescription { get; set; } = "";
+    public List<ItemState> Items { get; set; } = [];
+  }
+
+  public static void SaveGame(World world)
+  {
+    var gameState = new GameState
+    {
+      PlayerName = world.ThePlayer.EntityName,
+      PlayerPosition = world.ThePlayer.Coords,
+      PlayerInventory = world.ThePlayer.Inventory.Select(item => new ItemState
+      {
+        EntityName = item.EntityName,
+        ItemDescription = item.ItemDescription
+      }).ToList(),
+      Rooms = world.TheWorldMap.MapLayout
+            .SelectMany(row => row)
+            .Where(grid => grid is Room)
+            .Select(grid => (Room)grid)
+            .Select(room => new RoomState
+            {
+              Coords = room.Coords,
+              RoomTitle = room.RoomTitle ?? "",
+              RoomDescription = room.RoomDescription ?? "",
+              Items = room.Entities
+                    .OfType<Item>()
+                    .Select(item => new ItemState
+                    {
+                      EntityName = item.EntityName,
+                      ItemDescription = item.ItemDescription
+                    }).ToList()
+            }).ToList()
+    };
+
+    string jsonString = JsonSerializer.Serialize(gameState, new JsonSerializerOptions { WriteIndented = true });
+    File.WriteAllText("savegame.json", jsonString);
+  }
+
+  public static World? LoadGame()
+  {
+    try
+    {
+      if (!File.Exists("savegame.json"))
+      {
+        return null;
+      }
+
+      string jsonString = File.ReadAllText("savegame.json");
+      var gameState = JsonSerializer.Deserialize<GameState>(jsonString);
+
+      if (gameState == null)
+      {
+        return null;
+      }
+
+      var playerInventory = gameState.PlayerInventory
+          .Select(item => new Item(EntityTypeEnum.OBJECT, item.EntityName, item.ItemDescription))
+          .ToList();
+      var player = new Player(EntityTypeEnum.PLAYER, gameState.PlayerName, playerInventory, gameState.PlayerPosition);
+
+      var world = new World(player);
+
+      foreach (var roomState in gameState.Rooms)
+      {
+        var roomItems = roomState.Items
+            .Select(item => new Item(EntityTypeEnum.OBJECT, item.EntityName, item.ItemDescription))
+            .ToList<Entity>();
+        var room = new Room(roomItems, roomState.Coords, roomState.RoomTitle, roomState.RoomDescription);
+        world.TheWorldMap.MapLayout[roomState.Coords.PosY][roomState.Coords.PosX] = room;
+      }
+
+      return world;
+    }
+    catch (Exception)
+    {
+      return null;
+    }
+  }
+}/**
+ * Filename: InputParser.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Library;
+
+public class InputParser
+{
+  public static int ToInt()
+  {
+    string input = Console.ReadLine()!;
+
+    if (input == "" || input == null)
+    {
+      return -1;
+    }
+
+    int parsed = int.Parse(input);
+
+    return parsed;
+  }
+
+  public static string[] SpaceSeparatedToStringArray()
+  {
+    string input = Console.ReadLine()!;
+    string[] parsed = input.TrimEnd().Split(" ");
+
+    return parsed;
+  }
+}/**
+ * Filename: Menu.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+namespace Engine.Library;
+
+public class Menu
+{
+  public class MainMenu
+  {
+    public static void Show()
+    {
+      Console.WriteLine("---- Welcome to the game -----");
+      Console.WriteLine(@" ____                 _                 _             _ ");
+      Console.WriteLine(@"|  _ \ __ _ _ __   __| | ___  _ __ ___ (_)_______  __| |");
+      Console.WriteLine(@"| |_) / _` | '_ \ / _` |/ _ \| '_ ` _ \| |_  / _ \/ _` |");
+      Console.WriteLine(@"|  _ < (_| | | | | (_| | (_) | | | | | | |/ /  __/ (_| |");
+      Console.WriteLine(@"|_| \_\__,_|_| |_|\__,_|\___/|_| |_| |_|_/___\___|\__,_|");
+      Console.WriteLine(@"            _                                           ");
+      Console.WriteLine(@"   /\      | |                 _                        ");
+      Console.WriteLine(@"  /  \   _ | |_   _ ____ ____ | |_ _   _  ____ ____     ");
+      Console.WriteLine(@" / /\ \ / || | | | / _  )  _ \|  _) | | |/ ___) _  )    ");
+      Console.WriteLine(@"| |__| ( (_| |\ V ( (/ /| | | | |_| |_| | |  ( (/ /     ");
+      Console.WriteLine(@"|______|\____| \_/ \____)_| |_|\___)____|_|   \____)    ");
+      Console.WriteLine("");
+      Console.WriteLine("1. Start");
+      Console.WriteLine("2. Delete saved game");
+      Console.WriteLine("3. Exit");
+      Console.WriteLine("");
+      Console.Write("> ");
+    }
+  }
+
+}/**
+ * Filename: Initializers.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+using Engine.Classes;
+
+namespace Engine.Library;
+
+public class Initializer
+{
+  private const int MAP_SIZE_X = 10;
+  private const int MAP_SIZE_Y = 10;
+
+
+  public static List<List<MapGrid>> MakeMapLayout()
+  {
+    List<List<MapGrid>> mapLayout = [];
+
+    for (int y = 0; y < MAP_SIZE_Y; y++)
+    {
+      mapLayout.Add([]);
+      for (int x = 0; x < MAP_SIZE_X; x++)
+      {
+        mapLayout[y].Add(new MapGrid(new List<Entity>(), new Position(x, y)));
+      }
+    }
+
+    return mapLayout;
+  }
+
+  public static WorldMap MakeWorld()
+  {
+    List<List<MapGrid>> mapLayout = MakeMapLayout();
+
+    return new WorldMap(mapLayout);
+  }
+
+  public static Position RandomStartPosition()
+  {
+    Random rng = new();
+
+    int x = rng.Next(0, MAP_SIZE_X);
+    int y = rng.Next(0, MAP_SIZE_Y);
+
+    return new Position(x, y);
+  }
+
+  public static List<Room> MakeRooms(Player player)
+  {
+    Random rng = new();
+    List<Room> rooms = [];
+    HashSet<Position> usedPositions = [];
+    List<Deserializer.RoomDefinition> roomDefs = Deserializer.LoadRoomDefinitions();
+
+    // Create player's starting room
+    rooms.Add(new Room(
+      new List<Entity>(),
+      player.Coords,
+      "Starting Room",
+      "You find yourself in a dimly lit room of what appears to be an old mansion. You just woke up. Maybe try venturing outside the room and see what's going on here..."
+    ));
+    usedPositions.Add(player.Coords);
+    if (DebugConfig.VerboseMode) Console.WriteLine($"Debug - Player starting position: ({player.Coords.PosX}, {player.Coords.PosY})");
+
+    // Create a shuffled copy of room definitions
+    var shuffledRooms = roomDefs.OrderBy(x => rng.Next()).ToList();
+
+    // Calculate number of rooms to generate (excl. player's room)
+    int maxRooms = MAP_SIZE_X * MAP_SIZE_Y / 2; // Use half the map size
+    int numberOfRooms = rng.Next(5, maxRooms);
+    if (DebugConfig.VerboseMode) Console.WriteLine($"Attempting to generate {numberOfRooms} rooms...");
+
+    // Generate random rooms with maximum attempts to prevent infinite loop
+    int maxAttempts = MAP_SIZE_X * MAP_SIZE_Y * 2;
+    int attempts = 0;
+
+    while (rooms.Count < numberOfRooms + 1 && attempts < maxAttempts && shuffledRooms.Count > 0) // +1 for player room
+    {
+      attempts++;
+      if (DebugConfig.VerboseMode) Console.WriteLine($"Attempt: {attempts}");
+      Position pos = new(rng.Next(0, MAP_SIZE_X), rng.Next(0, MAP_SIZE_Y));
+
+      if (DebugConfig.VerboseMode)
+      {
+        Console.WriteLine($"Debug - Position: ({pos.PosX}, {pos.PosY})");
+        Console.WriteLine($"Debug - Position already used: {usedPositions.Contains(pos)}");
+        Console.WriteLine($"Debug - Available rooms: {shuffledRooms.Count}");
+        Console.WriteLine($"Debug room rng check: {!usedPositions.Contains(pos) && shuffledRooms.Count > 0}");
+      }
+      if (!usedPositions.Contains(pos) && shuffledRooms.Count > 0)
+      {
+        var currentRoom = shuffledRooms[0];
+        rooms.Add(new Room(
+          [],
+          pos,
+          currentRoom.RoomTitle,
+          currentRoom.RoomDescription
+        ));
+        usedPositions.Add(pos);
+        if (DebugConfig.VerboseMode) Console.WriteLine($"Generated room {rooms.Count}: {currentRoom.RoomTitle} at {pos}");
+        shuffledRooms.RemoveAt(0);
+      }
+    }
+
+    if (DebugConfig.VerboseMode) Console.WriteLine($"Successfully generated {rooms.Count} rooms (including player's room)");
+    return rooms;
+  }
+
+  public static Item MakeKey(WorldMap worldMap)
+  {
+    Random rng = new();
+    Position keyPosition;
+    Position playerStartPos = worldMap.MapLayout[0][0].Coords; // Get starting position
+
+    // Keep randomizing until a non-starting grid is generated
+    do
+    {
+      keyPosition = new Position(rng.Next(0, MAP_SIZE_X), rng.Next(0, MAP_SIZE_Y));
+    } while (keyPosition.Equals(playerStartPos) || !(worldMap.GetGridByPosition(keyPosition) is Room));
+
+    // Create the Key<Item>
+    var key = new Item(EntityTypeEnum.OBJECT, "Key", "A mysterious key that might unlock something important...");
+
+    // Add the key to the world map at the random position
+    var targetGrid = worldMap.GetGridByPosition(keyPosition);
+    if (targetGrid != null)
+    {
+      targetGrid.AddEntity(key);
+      if (DebugConfig.VerboseMode)
+      {
+        Console.WriteLine($"Debug - Added key at position: ({keyPosition.PosX}, {keyPosition.PosY})");
+      }
+    }
+
+    return key;
+  }
+
+  public static List<Item> MakeRandomItems(World world, List<Room> rooms)
+  {
+    Random rng = new();
+    List<Item> items = [];
+    List<Deserializer.ItemDefinition> itemDefs = Deserializer.LoadItemDefinitions();
+
+    var shuffledItems = itemDefs.OrderBy(x => rng.Next()).ToList();
+
+    // Filter out the player's starting room (first room in the list)
+    var availableRooms = rooms.Skip(1).OrderBy(x => rng.Next()).ToList();
+
+    if (DebugConfig.VerboseMode) Console.WriteLine($"Attempting to generate {shuffledItems.Count} items in {availableRooms.Count} available rooms...");
+
+    // Place items in rooms until we run out of either items or rooms
+    for (int i = 0; i < Math.Min(shuffledItems.Count, availableRooms.Count); i++)
+    {
+      var currentItemDef = shuffledItems[i];
+      var currentRoom = availableRooms[i];
+      var item = new Item(EntityTypeEnum.OBJECT, currentItemDef.EntityName, currentItemDef.ItemDescription);
+
+      currentRoom.AddEntity(item);
+      items.Add(item);
+
+      if (DebugConfig.VerboseMode)
+      {
+        Console.WriteLine($"Generated item {items.Count}: {item.EntityName} in room {currentRoom.RoomTitle} at {currentRoom.Coords}");
+      }
+    }
+
+    if (DebugConfig.VerboseMode)
+    {
+      Console.WriteLine($"Successfully generated {items.Count} items");
+    }
+
+    return items;
+  }
+
+  public static MapGrid? MakeExit(World world)
+  {
+    Random rng = new();
+    List<MapGrid> available = [];
+
+    // Find all available non-room positions that aren't the player's starting position
+    foreach (List<MapGrid> row in world.TheWorldMap.MapLayout)
+    {
+      foreach (MapGrid grid in row)
+      {
+        if (grid.GetType() != typeof(Room) && !grid.Coords.Equals(world.ThePlayer.Coords))
+        {
+          available.Add(grid);
+        }
+      }
+    }
+
+    if (available.Count == 0)
+    {
+      if (DebugConfig.VerboseMode)
+      {
+        Console.WriteLine("Warning: No available positions for exit found!");
+      }
+      return null;
+    }
+
+    // Randomly select a position for the exit
+    var exitPosition = available[rng.Next(available.Count)].Coords;
+    var exit = new MapGrid([], exitPosition, true);
+
+    // Update the world map with the exit
+    world.TheWorldMap.MapLayout[exitPosition.PosY][exitPosition.PosX] = exit;
+
+    if (DebugConfig.VerboseMode)
+    {
+      Console.WriteLine($"Created exit at position: ({exitPosition.PosX}, {exitPosition.PosY})");
+    }
+
+    return exit;
+  }
+}/**
+ * Filename: Program.cs
+ * Copyright (C) Anh Hoang Nguyen, AAANH Corporation. All rights reserved.
+ */
+using System.Diagnostics;
+using Engine.Classes;
+using Engine.Library;
+using Microsoft.VisualBasic.FileIO;
+
+namespace Engine;
+
+public class Program
+{
+  public static void Main()
+  {
+    // Init console window size
+    if (OperatingSystem.IsWindows())
+    {
+      Console.SetWindowSize(60, 60);
+    }
+
+    while (true)
+    {
+      Console.Clear();
+      Menu.MainMenu.Show();
+      int option = InputParser.ToInt();
+
+      switch (option)
+      {
+        case 1:
+          StartGame();
+          break;
+        case 2:
+          Console.WriteLine("!!! Confirmation !!!\n> Do you really want to delete saved game? (y/N)");
+          string choice = Console.ReadLine();
+          if (choice == "y")
+          {
+            try
+            {
+              Console.WriteLine("Deleting save file");
+              Thread.Sleep(500);
+              FileSystem.DeleteFile("savegame.json");
+              Console.WriteLine("Save file deleted successfully. Returning to main menu.");
+              Thread.Sleep(1000);
+            }
+            catch (Exception e)
+            {
+              Console.WriteLine("(!) Failed to delete save file. Maybe file does not exist or you don't have enough file permission.");
+              if (DebugConfig.VerboseMode)
+              {
+                TextWriter errWriter = Console.Error;
+                errWriter.WriteLine(e);
+              }
+              Console.WriteLine("Press any key to continue");
+              Console.ReadLine();
+            }
+          }
+          else
+          {
+            Console.WriteLine("Save file deletion aborted.");
+          }
+
+          break;
+        case 3:
+          Console.WriteLine("=================================================");
+          Console.WriteLine("+          Exiting game. See you again.         +");
+          Console.WriteLine("+ (C) 2025 Anh Hoang Nguyen <https://aaanh.com> +");
+          Console.WriteLine("=================================================");
+          Environment.Exit(0);
+          break;
+        case 9: // Hidden debug option
+          DebugConfig.VerboseMode = !DebugConfig.VerboseMode;
+          Console.WriteLine($"Debug mode is now {(DebugConfig.VerboseMode ? "ON" : "OFF")}");
+          Thread.Sleep(1000);
+          break;
+        default:
+          Console.WriteLine("Invalid option. Please try again.");
+          Thread.Sleep(1000);
+          break;
+      }
+    }
+  }
+
+  private static void StartGame()
+  {
+    // Clear console and set up game window
+    Console.Clear();
+    Console.CursorVisible = false;
+    Console.WriteLine("============== Game Starting ===============");
+    Console.WriteLine("+                                          +");
+    Console.WriteLine("+          Press any key to begin...       +");
+    Console.WriteLine("+                                          +");
+    Console.WriteLine("============================================");
+    Console.ReadKey(true);
+    Console.Clear();
+
+    // Try to load saved game
+    var savedWorld = GameStateManager.LoadGame();
+    World world;
+
+    if (savedWorld != null)
+    {
+      Console.WriteLine("Found a saved game! Press 'L' to load it or any other key to start new game.");
+      var key = Console.ReadKey(true);
+      if (char.ToLower(key.KeyChar) == 'l')
+      {
+        world = savedWorld;
+        Console.WriteLine("Game loaded successfully!");
+        Thread.Sleep(1000);
+      }
+      else
+      {
+        world = CreateNewGame();
+      }
+    }
+    else
+    {
+      world = CreateNewGame();
+    }
+
+    RunGameLoop(world);
+
+    // Cleanup after game ends
+    Console.Clear();
+    Console.CursorVisible = true;
+    Console.WriteLine("Thanks for playing!");
+    Thread.Sleep(1000); // Show msg for 1s
+  }
+
+  private static World CreateNewGame()
+  {
+    // Get player name
+    Console.Write("Enter your name: ");
+    string playerName = Console.ReadLine() ?? "Player";
+    Console.Clear();
+
+    // Initialize game
+    Position start = Initializer.RandomStartPosition();
+    Player player = new(EntityTypeEnum.PLAYER, playerName, new List<Item>(), start);
+    return new World(player);
+  }
+
+  private static void RunGameLoop(World world)
+  {
+    while (world.IsGameRunning)
+    {
+      Console.Clear();
+      Console.WriteLine($"\n\n======== {world.ThePlayer.EntityName}'s Adventure ========\n");
+
+      bool playerHasKey = world.ThePlayer.Inventory.Any(x => x.EntityName == "Key");
+
+      world.TheWorldMap.PrintMapLayout(playerHasKey);
+
+      MapGrid currentGrid = world.TheWorldMap.GetGridByPosition(world.ThePlayer.Coords)!;
+
+      Console.WriteLine($"\nPlayer Position: {world.ThePlayer.Coords}");
+      if (currentGrid is Room currentRoom)
+      {
+        Console.WriteLine("\n=== Current Location ===");
+        currentRoom.PrintRoomInfo();
+        Console.WriteLine("=======================");
+        if (currentGrid.Entities.Count == 1)
+        {
+          Console.WriteLine("This room has nothing of significance to you");
+        }
+        else
+        {
+          Console.WriteLine("======== Items ========");
+          Console.Write("> ");
+          foreach (Entity entity in currentRoom.Entities)
+          {
+            if (entity.GetType() == typeof(Item))
+            {
+              Console.Write($"{entity.EntityName} ");
+            }
+          }
+          Console.WriteLine("\n=======================");
+        }
+      }
+      else
+      {
+        Console.WriteLine("\n=== Current Location ===");
+        Console.WriteLine("Info: Just an ordinary hallway.");
+        Console.WriteLine("Description: But it gives you the feelings from a horror movie.");
+        Console.WriteLine("=======================");
+      }
+
+      if (world.ThePlayer.Inventory.Count > 0)
+      {
+        world.ThePlayer.ShowInventory();
+      }
+
+
+      // GAME LOOP MENU
+      Console.WriteLine("\nCommands:");
+      if (world.TheWorldMap.GetGridByPosition(world.ThePlayer.Coords)!.IsExit && world.ThePlayer.Inventory.Any(x => x.EntityName == "Key"))
+      {
+        Console.WriteLine("(x) Escape the damned place");
+
+      }
+      Console.WriteLine("(p) Pick Up Item");
+      Console.WriteLine("(i) Show Inventory");
+      Console.WriteLine("(w) Move Up     ");
+      Console.WriteLine("(s) Move Down   ");
+      Console.WriteLine("(a) Move Left   ");
+      Console.WriteLine("(d) Move Right  ");
+      Console.WriteLine("-------------------------------");
+      Console.WriteLine("(l) Load Previous Saved State");
+      Console.WriteLine("(v) Save Current State");
+      Console.WriteLine("-------------------------------");
+      Console.WriteLine("(q) Quit Game   ");
+      Console.Write("\n> ");
+
+      var input = Console.ReadKey(true);
+
+      ProcessInput(world, input.KeyChar);
+    }
+  }
+
+  private static void ProcessInput(World world, char input)
+  {
+    var currentPos = world.ThePlayer.Coords;
+    Position newPos;
+    var currentGrid = world.TheWorldMap.GetGridByPosition(currentPos);
+
+    switch (char.ToLower(input))
+    {
+      case 'x':
+        if (currentGrid!.IsExit && world.ThePlayer.Inventory.Any(x => x.EntityName == "Key"))
+        {
+          Console.Clear();
+          Console.WriteLine("🎉 Congratulations! You've successfully escaped!");
+          Console.WriteLine("You used the key to unlock the exit and complete your adventure.");
+          Thread.Sleep(2000); // Show success message for 2 seconds
+          world.EndGame();
+          return;
+        }
+        else if (currentGrid!.IsExit)
+        {
+          Console.WriteLine("You need a key to unlock the exit!");
+        }
+        newPos = currentPos;
+        break;
+      case 'p':
+        if (currentGrid is Room currentRoom)
+        {
+          var items = currentRoom.Entities.OfType<Item>().ToList();
+          if (items.Count > 0)
+          {
+            // Pick up the first item in the room
+            var item = items[0];
+            if (currentRoom.RemoveEntity(item))
+            {
+              world.ThePlayer.Inventory.Add(item);
+              Console.WriteLine($"Picked up {item.EntityName}");
+            }
+          }
+          else
+          {
+            Console.WriteLine("No items to pick up in this room.");
+          }
+        }
+        newPos = currentPos;
+        break;
+      case 'i':
+        ShowInventoryMenu(world);
+        newPos = currentPos;
+        break;
+      case 'v':
+        GameStateManager.SaveGame(world);
+        Console.WriteLine("Game saved successfully!");
+        Thread.Sleep(1000);
+        newPos = currentPos;
+        break;
+      case 'l':
+        var savedWorld = GameStateManager.LoadGame();
+        if (savedWorld != null)
+        {
+          world = savedWorld;
+          Console.WriteLine("Game loaded successfully!");
+          Thread.Sleep(1000);
+        }
+        else
+        {
+          Console.WriteLine("No saved game found!");
+          Thread.Sleep(1000);
+        }
+        newPos = currentPos;
+        break;
+      case 'w':
+        newPos = new Position(currentPos.PosX, currentPos.PosY - 1);
+        break;
+      case 's':
+        newPos = new Position(currentPos.PosX, currentPos.PosY + 1);
+        break;
+      case 'a':
+        newPos = new Position(currentPos.PosX - 1, currentPos.PosY);
+        break;
+      case 'd':
+        newPos = new Position(currentPos.PosX + 1, currentPos.PosY);
+        break;
+      case 'q':
+        world.EndGame();
+        return;
+      default:
+        newPos = currentPos;
+        break;
+    }
+
+    if (!newPos.Equals(currentPos))
+    {
+      if (!world.MovePlayer(newPos))
+      {
+        Console.WriteLine("Cannot move there!");
+        Thread.Sleep(500);
+      }
+    }
+  }
+
+  private static void ShowInventoryMenu(World world)
+  {
+    if (world.ThePlayer.Inventory.Count == 0)
+    {
+      Console.WriteLine("You're a broke ass *****!");
+      Thread.Sleep(1000);
+      return;
+    }
+
+    int currentIndex = 0;
+    bool inInventoryMenu = true;
+
+    while (inInventoryMenu)
+    {
+      Console.Clear();
+      Console.WriteLine("======== Inventory Menu ========");
+      Console.WriteLine("Use W/S to navigate, ESC to exit");
+      Console.WriteLine("================================");
+
+      for (int i = 0; i < world.ThePlayer.Inventory.Count; i++)
+      {
+        var item = world.ThePlayer.Inventory[i];
+        string prefix = i == currentIndex ? "> " : "  ";
+        Console.WriteLine($"{prefix}{item.EntityName}");
+      }
+
+      Console.WriteLine("================================");
+      Console.WriteLine(world.ThePlayer.Inventory[currentIndex].ItemDescription);
+      Console.WriteLine("================================");
+
+      var input = Console.ReadKey(true);
+      switch (char.ToLower(input.KeyChar))
+      {
+        case 'w':
+          currentIndex = (currentIndex - 1 + world.ThePlayer.Inventory.Count) % world.ThePlayer.Inventory.Count;
+          break;
+        case 's':
+          currentIndex = (currentIndex + 1) % world.ThePlayer.Inventory.Count;
+          break;
+        case (char)27: // ESC key
+          inInventoryMenu = false;
+          break;
+      }
+    }
+  }
+}
