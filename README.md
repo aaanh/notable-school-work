@@ -8,6 +8,7 @@ This is to showcase that I know what I put on my CV.
 
 ## Manifest
 
+```
 ├── [algo-w2025](./algo-w2025/)
 │   ├── Classes
 │   ├── Library
@@ -25,3 +26,4 @@ This is to showcase that I know what I put on my CV.
     ├── lib
     ├── output
     └── src
+```
