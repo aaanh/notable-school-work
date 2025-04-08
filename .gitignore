@@ -1,1 +1,5 @@
 **/Debug/**
+**/obj/**/Debug/
+**/obj/Debug/**
+**/obj/Debug/**/*
+./algo-w2025/obj/Debug/net9.0/engine.AssemblyInfo.cs
