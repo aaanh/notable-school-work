@@ -11,6 +11,7 @@ This is to showcase that I know what I put on my CV.
 - [algo-w2025](./algo-w2025/)
 - [oop-f2023](./oop-f2023/)
 - [oop-w2021](./oop-w2021/)
+- [oop-w2020](./stats-w2020/)
 
 ```
 ├── algo-w2025
@@ -24,10 +25,18 @@ This is to showcase that I know what I put on my CV.
 │   ├── a2
 │   ├── a3
 │   └── template_project
-└── oop-w2021
-    ├── data
-    ├── include
-    ├── lib
-    ├── output
-    └── src
+├── oop-w2021
+│   ├── data
+│   ├── include
+│   ├── lib
+│   ├── output
+│   └── src
+└── stats-w2020
+    ├── docs
+    ├── part-1
+    ├── part-1-rev
+    ├── part-2
+    ├── part-3
+    ├── results
+    └── sandbox
 ```
