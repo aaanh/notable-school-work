@@ -6,6 +6,8 @@ Each project has its own README and documentations on how to build and run, alon
 
 This is to showcase that I know what I put on my CV.
 
+Copyright (c) 2020, 2025 Anh Hoang Nguyen <@aaanh>
+
 ## Manifest
 
 - [algo-w2025](./algo-w2025/)
