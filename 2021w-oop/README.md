@@ -1,5 +1,13 @@
 # COEN 244 Project
 
+## Project Description
+
+This project parses the Panama Papers dataset (./data) into an in-memory graph structure to query connections between any 2 nodes.
+
+The idea is to improve the investigative process for journalists, connecting the dots between entities related to the tax evasion case.
+
+Dataset is initially cleaned using Python Pandas (./data/cleaner.ipynb) to produce a cleaned entity dataset (./data/cleaned/entity.csv).
+
 ### Author:
 
 \> Nguyen Hoang Anh
@@ -22,6 +30,7 @@
 -   Executable binary should be in `/output` folder
 -   RUN by `./output/main` \*Note: \*nix platforms' executable should have no extension or `.o` as extension when compiled. Windows x86 should have `main.exe` when compiled.
 
+
 ### Docker:
 
 - Quick and easy
@@ -34,9 +43,8 @@ docker run -it aaanh/meaningful-graph-traversal:latest
 - Build and run locally
 
 ```
-git clone https://github.com/aaanh/meaningful-graph-traversal && cd meaningful-graph-traversal
-docker build . --tag <your_dockerhub_uuid>/meaningful-graph-traversal:latest
-docker run -it <your_dockerhub_uuid>/meaningful-graph-traversal:latest
+make
+make run
 ```
 
 ### Documentation:

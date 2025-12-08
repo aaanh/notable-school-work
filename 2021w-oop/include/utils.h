@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
+#include <algorithm>
 
 #include "graph.h"
 #include "node.h"
@@ -33,5 +35,8 @@ void printDatabase(std::ifstream&);
 
 // data parser
 void dataParser(Graph &graph, std::ifstream &data);
+
+// cross-platform pause function
+void pauseSystem();
 
 #endif

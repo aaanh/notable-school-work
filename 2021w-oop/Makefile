@@ -9,6 +9,11 @@ CXX = g++
 # define any compile-time flags
 CXXFLAGS	:= -std=c++17 -Wall -Wextra -g
 
+# LTTng support (use 'make LTTNG=1' to enable)
+ifeq ($(LTTNG),1)
+CXXFLAGS += -DENABLE_LTTNG -llttng-ust -ldl
+endif
+
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
 #   their path using -Lpath, something like:
@@ -89,3 +94,11 @@ clean:
 run: all
 	./$(OUTPUTMAIN)
 	@echo Executing 'run: all' complete!
+
+lttng: clean
+	$(MAKE) LTTNG=1
+	@echo Build with LTTng instrumentation complete!
+
+run-lttng: lttng
+	./$(OUTPUTMAIN)
+	@echo Executing with LTTng support complete!

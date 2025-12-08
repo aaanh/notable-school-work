@@ -7,6 +7,8 @@
 #include <string>
 #include <algorithm>
 #include <fstream>
+#include <iostream>
+#include <iomanip>
 
 #include "node.h"
 #include "edge.h"
@@ -47,10 +49,22 @@ class Graph : public GraphBase
         vector<Edge*> getEdgeList(); // done
 
         // graph ops
-        /** TODO: Implement during the weekends
-        */
+        enum TraversalAlgo { DFS, BFS };
         void display();
+        void traverse(unsigned long startIndex, TraversalAlgo algo = DFS);
+        void dfsTraversal(unsigned long startIndex);
+        void bfsTraversal(unsigned long startIndex);
+        void findPath(unsigned long startIndex, unsigned long endIndex);
+        void dijkstraPath(unsigned long startIndex, unsigned long endIndex);
         bool clean();
+        
+    private:
+        int getEdgeWeight(Node* n1, Node* n2);
+        
+    private:
+        void dfsHelper(Node* node, vector<bool>& visited, vector<Node*>& nodeList);
+        vector<Node*> getAdjacent(Node* node);
+        void printPerformanceStats(const string& algoName, double timeMs, int nodesVisited);
 
     private:
         vector<Node*> node_list;

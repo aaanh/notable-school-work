@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/anh/repos/school-algo-final-project/engine.csproj": {}
+    "/home/anh/repos/notable-school-work/2025w-algorithm/engine.csproj": {}
   },
   "projects": {
-    "/Users/anh/repos/school-algo-final-project/engine.csproj": {
+    "/home/anh/repos/notable-school-work/2025w-algorithm/engine.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/anh/repos/school-algo-final-project/engine.csproj",
+        "projectUniqueName": "/home/anh/repos/notable-school-work/2025w-algorithm/engine.csproj",
         "projectName": "engine",
-        "projectPath": "/Users/anh/repos/school-algo-final-project/engine.csproj",
-        "packagesPath": "/Users/anh/.nuget/packages/",
-        "outputPath": "/Users/anh/repos/school-algo-final-project/obj/",
+        "projectPath": "/home/anh/repos/notable-school-work/2025w-algorithm/engine.csproj",
+        "packagesPath": "/home/anh/.nuget/packages/",
+        "outputPath": "/home/anh/repos/notable-school-work/2025w-algorithm/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/anh/.nuget/NuGet/NuGet.Config"
+          "/home/anh/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -38,7 +38,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net9.0": {
@@ -59,7 +59,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/9.0.306/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

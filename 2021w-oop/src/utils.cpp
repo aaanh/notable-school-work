@@ -1,87 +1,79 @@
-#include <filesystem>
-#include <string>
-
 #include "utils.h"
 
-std::string getOsName()
-{
-    #ifdef _WIN32 
+#include <chrono>
+#include <cstdlib>
+#include <filesystem>
+#include <string>
+#include <thread>
+
+std::string getOsName() {
+#ifdef _WIN32
     return "Windows 32-bit";
-    #elif _WIN64 
+#elif _WIN64
     return "Windows 64-bit";
-    #elif (__APPLE__ || __MACH__)
+#elif (__APPLE__ || __MACH__)
     return "macOS";
-    #elif __linux__
+#elif __linux__
     return "Linux";
-    #elif __FreeBSD__
+#elif __FreeBSD__
     return "FreeBSD";
-    #elif __unix || __unix__
+#elif __unix || __unix__
     return "Unix";
-    #else
+#else
     return "Other";
-    #endif
+#endif
 }
 
-std::string getCurrentPath()
-{
+std::string getCurrentPath() {
     std::string local_path = fs::current_path().string();
     return local_path;
 }
 
-std::string patchDataPath()
-{
-    
+std::string patchDataPath() {
     std::string patched;
-    if (getOsName() == "Windows 64-bit" || getOsName() == "Windows 32-bit")
-    {
-        patched = getCurrentPath().substr(0, (getCurrentPath().length())) + "\\data\\cleaned";
-    }
-    else
-    {
-        patched = getCurrentPath().substr(0, (getCurrentPath().length())) + "/data/cleaned/";
+    if (getOsName() == "Windows 64-bit" || getOsName() == "Windows 32-bit") {
+        patched = getCurrentPath().substr(0, (getCurrentPath().length())) +
+                  "\\data\\cleaned";
+    } else {
+        patched = getCurrentPath().substr(0, (getCurrentPath().length())) +
+                  "/data/cleaned/";
     }
     return patched;
 }
 
-void indexDirectory(std::string path)
-{
-    // int file_count = 0;
-    // for (const auto &entry : fs::directory_iterator(path)) ++file_count;
-        std::cout << "Found" << ": \n";
-    for (const auto &entry : fs::directory_iterator(path)) 
-        std::cout << " > " << entry.path() << "\n";
+void indexDirectory(std::string path) {
+    int file_count = 0;
+    std::cout << "Data files found:\n";
+    for (const auto &entry : fs::directory_iterator(path)) {
+        std::cout << " > " << entry.path().filename() << "\n";
+        file_count++;
+    }
+    std::cout << "Total files: " << file_count << "\n\n";
 }
 
-void openFiles(std::string path, std::ifstream &data)
-{
+void openFiles(std::string path, std::ifstream &data) {
     // try {
-        if ((getOsName() == "Windows 64-bit") + (getOsName() == "Windows 32-bit")) 
-        {
-            data.open(path + "\\entity.csv");
-            std::cout << (path + "\\entity.csv") << "\n";
-        } else if ((getOsName() == "macOS") || getOsName() == "Linux")
-        {
-            data.open(path + "/entity.csv");
-        }
+    if ((getOsName() == "Windows 64-bit") + (getOsName() == "Windows 32-bit")) {
+        data.open(path + "\\entity.csv");
+        std::cout << (path + "\\entity.csv") << "\n";
+    } else if ((getOsName() == "macOS") || getOsName() == "Linux") {
+        data.open(path + "/entity.csv");
+    }
 
-        if (!(data.is_open()))
-        {
-            std::cout << "Failed to open database. Check path.\n";
-        } else {
-            std::cout << "Database opened successfully.\n";
-        }
+    if (!(data.is_open())) {
+        std::cout << "Failed to open database. Check path.\n";
+    } else {
+        std::cout << "Database opened successfully.\n";
+    }
 }
 
-void printDatabase(std::ifstream &data) 
-{
+void printDatabase(std::ifstream &data) {
     std::string line;
     std::string temp_id, n, j, jd, cc, c;
     unsigned long int id;
     int line_count = 0;
-    while (std::getline(data, line))
-    {
-        if (line_count != 0) 
-        {
+    while (std::getline(data, line)) {
+        if (line_count != 0) {
             // get the csv data
             std::stringstream ss(line);
             getline(ss, temp_id, ',');
@@ -93,7 +85,7 @@ void printDatabase(std::ifstream &data)
 
             // type conversion
             id = stod(temp_id);
-        
+
             // print data
             std::cout << "> Entry ID       : " << id << "\n";
             std::cout << ">> Name          : " << n << "\n";
@@ -108,18 +100,15 @@ void printDatabase(std::ifstream &data)
     }
 }
 
-void dataParser(Graph &graph, std::ifstream &data)
-{
+void dataParser(Graph &graph, std::ifstream &data) {
     std::string line;
     std::string temp_id, name, j, jd, cc, c;
     unsigned long id;
     int line_count = 0;
     clock_t start, end;
     start = clock();
-    while (std::getline(data, line))
-    {
-        if (line_count != 0) 
-        {
+    while (std::getline(data, line)) {
+        if (line_count != 0) {
             // get the csv data
             std::stringstream ss(line);
             getline(ss, temp_id, ',');
@@ -135,22 +124,38 @@ void dataParser(Graph &graph, std::ifstream &data)
 
             graph.addNode(*n);
 
-            for (auto node : graph.getNodeList())
-            {
-                if (n->getCountryCode() == node->getCountryCode())
-                {
-                    Edge *e = new Edge(*n, *node);
+            // Create edges only with the previous node of same country (chain approach)
+            auto nodeList = graph.getNodeList();
+            for (int i = nodeList.size() - 2; i >= 0; i--) {
+                if (n->getCountryCode() == nodeList[i]->getCountryCode() && 
+                    n->getNodeId() != nodeList[i]->getNodeId()) {
+                    Edge *e = new Edge(*n, *nodeList[i]);
                     graph.addEdge(*e);
+                    break; // only connect to most recent node with same country
                 }
             }
         }
         line_count++;
-        std::cout << "Parsing entry: " << line_count << "\r";
-        graph.setNumOfEntries(line_count);
-        std::cout.flush();
+        if (line_count % 100 == 0) {
+            std::cout << "\rProcessed: " << line_count << " entries";
+            std::cout.flush();
+        }
+        graph.setNumOfEntries(line_count - 1);
     }
     end = clock();
     double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-    std::cout << "Parse time: " << fixed << time_taken << setprecision(5) << " seconds" << "\n";
-    std::cout << "Database parsed successfully. Found: " << line_count << " entries.\n";
+    std::cout << "\n\n=== PARSING COMPLETE ===\n";
+    std::cout << "Parse time: " << std::fixed << std::setprecision(3) << time_taken << " seconds\n";
+    std::cout << "Total entries: " << line_count - 1 << "\n";
+    std::cout << "Nodes: " << graph.getNodeCount() << "\n";
+    std::cout << "Edges: " << graph.getEdgeCount() << "\n";
+    std::cout << "========================\n\n";
+}
+
+void pauseSystem() {
+    if (getOsName().find("Windows") != std::string::npos) {
+        std::system("pause");
+    } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
 }
