@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Anh's Blog{% endblock%}
+
+{% block content %}
+<div class="flex flex-col md:flex-row gap-8 w-full">
+  <!-- Mobile Table of Contents -->
+  <details class="md:hidden w-full mb-6">
+    <summary class="w-full p-4 cursor-pointer bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors list-none" style="background-color: #ecf0f1;">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-xl" style="color: #1a252f">Anh's Blog - Navigation</h2>
+        <svg 
+          class="w-5 h-5 transition-transform details-arrow" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+          style="color: #1a252f"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+    </summary>
+    <div class="mt-4 p-4 rounded-lg border" style="background-color: #ecf0f1; border-color: #bdc3c7">
+      <div class="space-y-6">
+        <div>
+          <h2 class="font-bold text-xl mb-4">
+            <a href="{% url 'home' %}" style="color: #1a252f">Anh's Blog</a>
+          </h2>
+        </div>
+        <div>
+          <h3 class="mb-4 font-semibold text-lg" style="color: #1a252f">
+            Table of Contents
+          </h3>
+          <div class="text-sm toc-container">
+            {% if has_headings %} {{ toc|safe }} {% else %} /root {% endif %}
+          </div>
+        </div>
+        <div>
+          <h3 class="mb-4 font-semibold text-lg" style="color: #1a252f">
+            All Posts
+          </h3>
+          <div class="text-sm">
+            {% for post in all_posts %}
+            <div class="mb-2">
+              {% if post.slug == current_slug %}
+              <a href="{% url 'post' slug=post.slug %}" class="font-semibold" style="color: #3498db">
+                {{ post.title }}
+              </a>
+              {% else %}
+              <a href="{% url 'post' slug=post.slug %}" style="color: #7f8c8d">
+                {{ post.title }}
+              </a>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Desktop sidebar -->
+  <aside class="hidden md:block top-6 fixed flex-shrink-0 w-64 h-screen overflow-y-auto">
+    <div class="space-y-6">
+      <div>
+        <h2 class="font-bold text-xl">
+          <a href="{% url 'home' %}" style="color: #1a252f">Anh's Blog</a>
+        </h2>
+      </div>
+      <div>
+        <h3 class="mb-4 font-semibold text-lg" style="color: #1a252f">
+          Table of Contents
+        </h3>
+        <div class="text-sm toc-container">
+          {% if has_headings %} {{ toc|safe }} {% else %} /root {% endif %}
+        </div>
+      </div>
+      <div>
+        <h3 class="mb-4 font-semibold text-lg" style="color: #1a252f">
+          All Posts
+        </h3>
+        <div class="text-sm">
+          {% for post in all_posts %}
+          <div class="mb-2">
+            {% if post.slug == current_slug %}
+            <a href="{% url 'post' slug=post.slug %}" class="font-semibold" style="color: #3498db">
+              {{ post.title }}
+            </a>
+            {% else %}
+            <a href="{% url 'post' slug=post.slug %}" style="color: #7f8c8d">
+              {{ post.title }}
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <article class="flex-1 md:ml-72 min-w-0 max-w-none prose">
+    {% if frontmatter %}
+    <div class="mb-6 p-4 border rounded-lg text-sm" style="background-color: #ecf0f1; border-color: #bdc3c7">
+      <h3 class="mb-2 font-semibold text-lg" style="color: #1a252f">
+        Post Metadata
+      </h3>
+      {% for key, value in frontmatter.items %}
+      <div><strong>{{ key }}:</strong> {{ value }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {{ content|safe }}
+    <a href="{% url 'home' %}" class="inline-block mt-8 hover:underline" style="color: #3498db">← Back to home</a>
+  </article>
+</div>
+{% endblock %}

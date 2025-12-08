@@ -1,0 +1,4 @@
+Django>=5.2.7
+markdown>=3.0
+PyYAML>=6.0
+python-dotenv>=1.0.0

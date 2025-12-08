@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="{% block description %}Anh's technology blog{% endblock %}" />
+  <title>{% block title %}Anh's Blog{% endblock %}</title>
+  {% load static %}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="{% static 'globals.css' %}" rel="stylesheet" type="text/css" />
+  <link rel="icon" type="image/x-icon" href="{% static 'icon.png' %}" />
+</head>
+
+<body class="bg-white p-6 min-h-screen text-gray-900" style="background-color: #ffffff; color: #2c3e50;">
+
+  <main class="mx-auto">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="mt-20 text-sm text-center" style="color: #7f8c8d;">
+    © {{ now|date:"Y" }} Anh Nguyen
+  </footer>
+</body>
+
+</html>

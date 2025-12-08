@@ -1,0 +1,133 @@
+---
+title: Full-Stack + DevOps + InfraOps of a Gacha Simulator - Part 1 of 2
+pubDate: "2024-03-05"
+tags:
+  [
+    "full-stack",
+    "development",
+    "nextjs",
+    "react",
+    "golang",
+    "database",
+    "sql",
+    "api",
+    "devops",
+    "ci-cd"
+  ]
+draft: false
+description: The checkpoint for my development experience and knowledge so far at the beginning of 2024. In this part, I talk about my history, the idea, the frontend and backend stack. For the next part, it will be the data schema and database design, the DevOps process, and infrastructures.
+heroImage: "/blog-content/build-a-gacha-simulator-part-1.jpeg"
+---
+
+- Try out the app at https://reroll.ing
+- Source available at https://github.com/aaanh/reroll.ing
+
+# A brief history of the road so far...
+
+I first started my developer journey back in 2018 with building sites in WordPress, Wix, and a drag and drop website builder tool from GoDaddy. I built them for my relative's business in the States, some student organizations and for my now defunct and deleted blog where I wrote cringe stuff in high school.
+
+I first jump into the galore of actual web development was back in 2019 when I built my personal website experimenting with HTML/CSS/JS, banged my head against the wall dealing with DNS, and stabbed my wallet to death with AWS EC2 bills. Then in 2020, at the height of the pandemic, I came into the world of React development through a now defunct project with my friend where I struggled every day with functional components, HTTP requests, API servers, MongoDB, managing (S)CSS files, and managing Python environments. After that fiasco, I learned about Nextjs and Vercel at the end of 2020.
+
+The next stage was DevOps when I learned about CI/CD pipelines, Docker, Github Actions, and finally Ansible through Jeff Geerling's materials.
+
+I had my first taste of real development and DevOps practice during my second internship where I tried my best to update a legacy tool, manage builds and deployments on Azure DevOps. Right after which, I built a simple [GPT web chat application](https://gpt.aaanh.app) joined Nuance and Microsoft 4 months later doing API and microservice development (Nestjs, Golang, Python, etc.), application security enhancements, systems automation, and Kubernetes deployment.
+
+# The Gacha Simulator
+
+I realized after getting back from my long break in the summer of 2023 that I must continuously practice the crafts I learned in the past or else I am bound to forget how to do anything. And I was in need of the development cocaine, as if the programming load from the courses I was taking was not enough, to satiate my brain receptors.
+
+Those who know me know that I am a huge gacha game fanatic, so huge that it is life-threateningly detrimental. Hyperboles aside, the one gacha game that got me started is Fate Grand Order (FGO). Introduced to me by one of my friends who is also studying abroad back in 2018, the weirdest and most ambivalent time of my life, I depended on the game to have some grasp on reality. Although FGO wasn't the first gacha I've ever played, it surely got me hooked, line and sinker and all of that, from then on. I reveled myself in the various limited character events as the time passes until Decemeber 2023.
+
+One brisk morning back in January 2023, I came across Atlas Academy and its Discord server. At that time, I only considered it as an infinitely better alternative to the FGO Wikia, which is full of crap advertisements that it's impossible to use without an ad-blocker. Then came December. Cooped up in my apartment whenever there was not a lecture to attend, I grew tired of doing the same routine every day. Equipped with the experience and motivated by the sense of impending boring doom, I decided to write a gacha simulator.
+
+# The Idea
+
+Knowing that Atlas Academy provides a very comprehensible database for the characters, also called 'servants' -- please don't cancel me, in FGO with their respective original name in Japanese, English translation, stats, and more importantly the asset link to the in-game servant card face. I embarked on a journey to develop a simulator that would work somewhat similar to the real logic.
+
+There's also another motivating factor that I can't seem to keep my mouth shut about: I landed the ownership of the new TLD domain `reroll.ing`.
+
+# The Stack
+
+The rough idea is pretty much straightforward. So, it was time for me to pick my poison for what I'll be developing the application with.
+
+## Frontend
+
+I picked React -> Nextjs -> create-t3-app, just the usual suspects.
+
+React has been my _de facto_ way of building web applications for more than 5 years now and I don't think that status quo would change anytime soon. To move as quickly as possible, this decision makes sense, because I know the in's and out's of React, and Next in particular, enough to dish out a working prototype in the shortest time and least effort.
+
+Although, I want to mention that I do experiment with other "bleeding edge" libraries and frameworks like Vuejs, SvelteKit, and Astro (which this blog is built on).
+
+Finally, The Vercel integration for deploying the React app is a welcoming familiar workflow as well. The CDN and caching are handled on both Vercel's side and Cloudflare on the network layer, so performance, availability and scaling shouldn't be a huge issue. Plus, it's free!
+
+## Backend
+
+In terms of functional requirements, I just need a server that:
+
+- Performs the randomized gacha roll business logic:
+  - Single Roll
+  - Multi Roll
+
+> The execution of roll(s) MUST be handled completely by the backend service, it SHOULD construct a response body containing the rolls for the frontend client to simply render and display to the user.
+
+Example of a JSON response for a single roll
+
+```json
+{
+  "roll": {
+    "collectionNo": 36,
+    "originalName": "ヴォルフガング・アマデウス・モーツァルト",
+    "name": "Wolfgang Amadeus Mozart",
+    "rarity": 1,
+    "className": "caster",
+    "atkMax": 5195,
+    "hpMax": 7129,
+    "attribute": "star",
+    "face": "https://static.atlasacademy.io/JP/Faces/f_5015000.png",
+    "face_path": "https://api.reroll.ing/assets/36.png"
+  }
+}
+```
+
+Which leads us to the lower layer of building servant information
+
+- Provides servant information queried from a database.
+  - Provides single servant information queried by ID (collection number).
+- (Added later) Provides the total number of servants.
+
+Example of a JSON response query by ID
+
+```json
+{
+  "servant": {
+    "collectionNo": 1,
+    "originalName": "マシュ・キリエライト",
+    "name": "Mash Kyrielight",
+    "rarity": 3,
+    "className": "shielder",
+    "atkMax": 6791,
+    "hpMax": 10302,
+    "attribute": "earth",
+    "face": "https://static.atlasacademy.io/JP/Faces/f_8001000.png",
+    "face_path": "https://api.reroll.ing/assets/1.png"
+  }
+}
+```
+
+And finally,
+
+- Provides simple health check endpoint for server status
+
+I have been ~trying to learn~ learning Golang for the past few months, plus several more months in the previous year. Most of my contact with Golang was through doing the [Advent of Code](https://adventofcode.com) challenges. While I could definitely build a Nodejs-based backend server pretty effortlessly, I want to put my Go skills to the test, in production. Therefore, I decided to go with Go.
+
+A simple search on the internet says that I should use Go Gin as the simple API server. It is quite ubiquitously used and has a lot of community support. Also, at first glance the provided methods and syntaxes look easily maintainable, resulting in shorter time to "market".
+
+I followed the tutorial on [how to build a movie database tutorial](https://go.dev/doc/tutorial/web-service-gin) on the Golang docs site and simply adapted and expanded on the idea from there. 110% would recommend checking that out.
+
+# End of part 1
+
+Thanks for sticking out this far. It is a lengthy post and post series, but I hope to document all the technical details and considerations I have made for this precious project of mine and hope that these rambles would help you with the development of your (pet) projects as well.
+
+That's it for this part. If I continue, I might not be able to stop and the content might never see the light of day 🥹 With the next part, I will discuss the data schema, database design, how I set up the hosting and networking.
+
+See you later.
