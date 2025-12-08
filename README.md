@@ -10,9 +10,9 @@ Copyright (c) 2020, 2025 Anh Hoang Nguyen <@aaanh>
 
 ## Manifest
 
-- [algo-w2025](./algo-w2025/)
-- [oop-w2021](./oop-w2021/)
-- [oop-w2020](./stats-w2020/)
+- [algo-w2025](./algo-w2025/) (Lasalle College)
+- [oop-w2021](./oop-w2021/) (Concordia University)
+- [oop-w2020](./stats-w2020/) (Concordia University)
 
 ```
 ├── algo-w2025
@@ -22,10 +22,6 @@ Copyright (c) 2020, 2025 Anh Hoang Nguyen <@aaanh>
 │   ├── bin
 │   ├── demo
 │   └── obj
-├── oop-f2023
-│   ├── a2
-│   ├── a3
-│   └── template_project
 ├── oop-w2021
 │   ├── data
 │   ├── include
