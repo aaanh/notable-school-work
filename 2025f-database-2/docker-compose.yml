@@ -1,0 +1,13 @@
+services:
+  420-bd2-as-project-db:
+    image: gvenzl/oracle-xe:latest
+    environment:
+      - ORACLE_PASSWORD=sysadm
+    ports:
+      - 1521:1521
+    volumes:
+      - oracle-volume:/opt/oracle/oradata
+    platform: linux/amd64
+
+volumes:
+  oracle-volume:
