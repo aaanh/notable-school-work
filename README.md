@@ -11,7 +11,6 @@ Copyright (c) 2020, 2025 Anh Hoang Nguyen <@aaanh>
 ## Manifest
 
 - [algo-w2025](./algo-w2025/)
-- [oop-f2023](./oop-f2023/)
 - [oop-w2021](./oop-w2021/)
 - [oop-w2020](./stats-w2020/)
 
