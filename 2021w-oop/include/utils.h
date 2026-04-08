@@ -27,9 +27,6 @@ void indexDirectory(std::string path);
 // open files
 void openFiles(std::string, std::ifstream&);
 
-// get current path
-std::string getCurrentPath();
-
 // print data 
 void printDatabase(std::ifstream&);
 

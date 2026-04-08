@@ -9,7 +9,7 @@
 using namespace std;
 
 Graph TestDataUtils();
-void TestIO(Graph graph);
-void TestGraphTraversal(Graph graph);
+void TestIO(Graph& graph);
+void TestGraphTraversal(Graph& graph);
 
 #endif

@@ -55,9 +55,9 @@ Graph TestDataUtils() {
     return graph;
 }
 
-void TestIO(Graph graph) {
-    auto node_list = graph.getNodeList();
-    auto edge_list = graph.getEdgeList();
+void TestIO(Graph& graph) {
+    const auto& node_list = graph.getNodeList();
+    const auto& edge_list = graph.getEdgeList();
 
     cout << "\n=== TESTING NODE ACCESSORS ===\n";
     if (!node_list.empty()) {
@@ -113,7 +113,7 @@ void TestIO(Graph graph) {
     pauseSystem();
 }
 
-void TestGraphTraversal(Graph graph) {
+void TestGraphTraversal(Graph& graph) {
     if (graph.getNodeCount() == 0) {
         cout << "No nodes available for traversal.\n";
         return;

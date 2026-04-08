@@ -1,0 +1,37 @@
+graph G {
+  layout=neato;
+  overlap=scale;
+  charset="UTF-8";
+  n12 [label="VICTORY GROUP LIMITED\n(TWN)"];
+  n13 [label="CHARTER MARK LIMITED\n(CHN)"];
+  n14 [label="Wide International Trading Co. Ltd.\n(HKG)"];
+  n15 [label="HTSS ET CAPITAL LIMITED\n(HKG)"];
+  n16 [label="JIE LUN INVESTMENT LIMITED\n(HKG)"];
+  n17 [label="FORTUNE PALACE LIMITED\n(CHN)"];
+  n18 [label="LAKE STREET INVESTMENTS LTD.\n(CHE)"];
+  n19 [label="NINGBO RAPID INTERNATIONAL TRADING CO. LTD.\n(HKG)"];
+  n20 [label="ANGELIKA INTERNATIONAL LTD.\n(SGP)"];
+  n21 [label="CHEM D-T Corp.\n(TWN)"];
+  n22 [label="PRESTIGE INTERNATIONAL CORP.\n(TWN)"];
+  n23 [label="SUNNY TREASURE INTERNATIONAL LIMITED\n(TWN)"];
+  n24 [label="GIT CO INC.\n(CHE)"];
+  n25 [label="EURO INVESTMENT CAPITAL INC.\n(CHE)"];
+  n26 [label="WORLD TOOLS INVESTMENTS CORP.\n(BRA)"];
+  n27 [label="WINESELECTION S.A.\n(CHE)"];
+  n28 [label="NECY CONSULTANTS LIMITED\n(HKG)"];
+  n29 [label="KIND INTERNATIONAL INC.\n(TWN)"];
+  n30 [label="Aegis Infocom Inc.\n(TWN)"];
+  n14 -- n15;
+  n15 -- n16;
+  n13 -- n17;
+  n16 -- n19;
+  n12 -- n21;
+  n21 -- n22;
+  n22 -- n23;
+  n18 -- n24;
+  n24 -- n25;
+  n25 -- n27;
+  n19 -- n28;
+  n23 -- n29;
+  n29 -- n30;
+}

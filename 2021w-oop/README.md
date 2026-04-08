@@ -43,8 +43,18 @@ docker run -it aaanh/meaningful-graph-traversal:latest
 - Build and run locally
 
 ```
-make
+make all
 make run
+```
+
+- Visualize a graph with Graphviz
+
+```sh
+# 1. install it first
+# 2. generate the .dot file with option 3 - Display Graph
+# 3. generate the PNG file from resulting .dot
+dot -Tpng -o output/graph-display.png output/graph-display.dot
+# 4. profit in output/graph-display.png
 ```
 
 ### Documentation:

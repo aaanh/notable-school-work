@@ -16,11 +16,10 @@ class Container
 
         GraphBase* getGraph(int c_index) const;
         void addGraph(GraphBase* g);
-        vector<GraphBase*> getContainer() const;
+        std::vector<GraphBase*> getContainer() const;
 
     private:
-        vector<GraphBase*> container;
-        int size = container.size();
+        std::vector<GraphBase*> container;
 };
 
 #endif

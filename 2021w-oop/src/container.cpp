@@ -25,7 +25,7 @@ void Container::addGraph(GraphBase* g)
     this->container.push_back(g);
 }
 
-vector<GraphBase*> Container::getContainer() const
+std::vector<GraphBase*> Container::getContainer() const
 {
     return this->container;
 }

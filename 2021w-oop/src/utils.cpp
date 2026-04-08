@@ -24,21 +24,8 @@ std::string getOsName() {
 #endif
 }
 
-std::string getCurrentPath() {
-    std::string local_path = fs::current_path().string();
-    return local_path;
-}
-
 std::string patchDataPath() {
-    std::string patched;
-    if (getOsName() == "Windows 64-bit" || getOsName() == "Windows 32-bit") {
-        patched = getCurrentPath().substr(0, (getCurrentPath().length())) +
-                  "\\data\\cleaned";
-    } else {
-        patched = getCurrentPath().substr(0, (getCurrentPath().length())) +
-                  "/data/cleaned/";
-    }
-    return patched;
+    return (fs::current_path() / "data" / "cleaned").string();
 }
 
 void indexDirectory(std::string path) {
@@ -52,13 +39,9 @@ void indexDirectory(std::string path) {
 }
 
 void openFiles(std::string path, std::ifstream &data) {
-    // try {
-    if ((getOsName() == "Windows 64-bit") + (getOsName() == "Windows 32-bit")) {
-        data.open(path + "\\entity.csv");
-        std::cout << (path + "\\entity.csv") << "\n";
-    } else if ((getOsName() == "macOS") || getOsName() == "Linux") {
-        data.open(path + "/entity.csv");
-    }
+    const fs::path entityFile = fs::path(path) / "entity.csv";
+    data.open(entityFile);
+    std::cout << entityFile.string() << "\n";
 
     if (!(data.is_open())) {
         std::cout << "Failed to open database. Check path.\n";
@@ -125,8 +108,8 @@ void dataParser(Graph &graph, std::ifstream &data) {
             graph.addNode(*n);
 
             // Create edges only with the previous node of same country (chain approach)
-            auto nodeList = graph.getNodeList();
-            for (int i = nodeList.size() - 2; i >= 0; i--) {
+            const auto& nodeList = graph.getNodeList();
+            for (int i = static_cast<int>(nodeList.size()) - 2; i >= 0; i--) {
                 if (n->getCountryCode() == nodeList[i]->getCountryCode() && 
                     n->getNodeId() != nodeList[i]->getNodeId()) {
                     Edge *e = new Edge(*n, *nodeList[i]);

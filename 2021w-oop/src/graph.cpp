@@ -3,6 +3,33 @@
 #include <queue>
 #include <chrono>
 #include <climits>
+#include <limits>
+#include <set>
+#include <filesystem>
+#include <fstream>
+#include <utility>
+
+namespace fs = std::filesystem;
+
+namespace {
+
+std::string dotEscapeLabel(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (char c : s) {
+        if (c == '\\' || c == '"') {
+            out += '\\';
+        }
+        if (c == '\n' || c == '\r') {
+            out += ' ';
+            continue;
+        }
+        out += c;
+    }
+    return out;
+}
+
+} // namespace
 
 #ifdef ENABLE_LTTNG
 #define TRACEPOINT_DEFINE
@@ -14,7 +41,14 @@
 
 Graph::Graph() {}
 
-Graph::~Graph() {}
+Graph::~Graph() {
+    for (Node* n : node_list) {
+        delete n;
+    }
+    for (Edge* e : edge_list) {
+        delete e;
+    }
+}
 
 bool Graph::addNode(Node &n) {
     bool flag;
@@ -111,9 +145,18 @@ bool Graph::setNumOfEntries(unsigned long entries) {
 
 unsigned long Graph::getNumOfEntries() { return num_of_entries; }
 
-vector<Node *> Graph::getNodeList() { return this->node_list; }
+const std::vector<Node*>& Graph::getNodeList() const { return node_list; }
 
-vector<Edge *> Graph::getEdgeList() { return this->edge_list; }
+const std::vector<Edge*>& Graph::getEdgeList() const { return edge_list; }
+
+size_t Graph::nodeIndex(Node* node) const {
+    for (size_t i = 0; i < node_list.size(); ++i) {
+        if (node_list[i] == node) {
+            return i;
+        }
+    }
+    return std::numeric_limits<size_t>::max();
+}
 
 void Graph::display() {
     if (node_list.empty()) {
@@ -178,6 +221,66 @@ void Graph::display() {
     }
 
     cout << "====================================\n";
+
+    fs::path outDir = fs::current_path() / "output";
+    std::error_code ec;
+    fs::create_directories(outDir, ec);
+    const std::string dotPath = (outDir / "graph-display.dot").string();
+    const std::string pngPath = (outDir / "graph-display.png").string();
+    if (exportDot(begin, end, dotPath)) {
+        cout << "\nGraphviz DOT (same index range, edges with both ends in range): "
+             << dotPath << "\n";
+        cout << "Render PNG: dot -Tpng -o \"" << pngPath << "\" \"" << dotPath << "\"\n";
+#if defined(__APPLE__)
+        cout << "Then: open \"" << pngPath << "\"\n";
+#endif
+    } else {
+        cout << "\nCould not write DOT file.\n";
+    }
+}
+
+bool Graph::exportDot(unsigned long begin, unsigned long end, const std::string& path) {
+    if (node_list.empty() || begin > end || end >= node_list.size()) {
+        return false;
+    }
+
+    std::ofstream out(path);
+    if (!out) {
+        return false;
+    }
+
+    out << "graph G {\n";
+    out << "  layout=neato;\n";
+    out << "  overlap=scale;\n";
+    out << "  charset=\"UTF-8\";\n";
+
+    for (size_t i = begin; i <= end; ++i) {
+        out << "  n" << i << " [label=\"" << dotEscapeLabel(node_list[i]->getName())
+            << "\\n(" << dotEscapeLabel(node_list[i]->getCountryCode()) << ")\"];\n";
+    }
+
+    const size_t bad = std::numeric_limits<size_t>::max();
+    std::set<std::pair<size_t, size_t>> drawn;
+    for (auto* e : edge_list) {
+        auto pair = e->getNodePair();
+        size_t a = nodeIndex(pair[0]);
+        size_t b = nodeIndex(pair[1]);
+        if (a == bad || b == bad) {
+            continue;
+        }
+        if (a < begin || a > end || b < begin || b > end) {
+            continue;
+        }
+        if (a > b) {
+            std::swap(a, b);
+        }
+        if (drawn.insert({a, b}).second) {
+            out << "  n" << a << " -- n" << b << ";\n";
+        }
+    }
+
+    out << "}\n";
+    return true;
 }
 
 void Graph::traverse(unsigned long startIndex, TraversalAlgo algo) {
@@ -209,7 +312,7 @@ void Graph::dfsTraversal(unsigned long startIndex) {
     cout << "Path: ";
     
     int nodesVisited = 0;
-    dfsHelper(node_list[startIndex], visited, node_list);
+    dfsHelper(node_list[startIndex], visited);
     
     // Count visited nodes
     for (bool v : visited) if (v) nodesVisited++;
@@ -249,15 +352,8 @@ void Graph::bfsTraversal(unsigned long startIndex) {
         
         vector<Node*> adjacent = getAdjacent(current);
         for (Node* adj : adjacent) {
-            int adjIndex = -1;
-            for (size_t i = 0; i < node_list.size(); i++) {
-                if (node_list[i] == adj) {
-                    adjIndex = i;
-                    break;
-                }
-            }
-            
-            if (adjIndex != -1 && !visited[adjIndex]) {
+            size_t adjIndex = nodeIndex(adj);
+            if (adjIndex != std::numeric_limits<size_t>::max() && !visited[adjIndex]) {
                 visited[adjIndex] = true;
                 q.push(adj);
             }
@@ -274,24 +370,19 @@ void Graph::bfsTraversal(unsigned long startIndex) {
     printPerformanceStats("BFS", durationMs, nodesVisited);
 }
 
-void Graph::dfsHelper(Node* node, vector<bool>& visited, vector<Node*>& nodeList) {
-    int nodeIndex = -1;
-    for (size_t i = 0; i < nodeList.size(); i++) {
-        if (nodeList[i] == node) {
-            nodeIndex = i;
-            break;
-        }
+void Graph::dfsHelper(Node* node, vector<bool>& visited) {
+    size_t idx = nodeIndex(node);
+    if (idx == std::numeric_limits<size_t>::max() || visited[idx]) {
+        return;
     }
-    
-    if (nodeIndex == -1 || visited[nodeIndex]) return;
-    
-    visited[nodeIndex] = true;
+
+    visited[idx] = true;
     TRACE(graph_provider, node_visit, node->getName().c_str(), node->getNodeId());
     cout << node->getName() << " -> ";
     
     vector<Node*> adjacent = getAdjacent(node);
     for (Node* adj : adjacent) {
-        dfsHelper(adj, visited, nodeList);
+        dfsHelper(adj, visited);
     }
 }
 
@@ -358,18 +449,11 @@ void Graph::findPath(unsigned long startIndex, unsigned long endIndex) {
         
         vector<Node*> adjacent = getAdjacent(node_list[current]);
         for (Node* adj : adjacent) {
-            int adjIndex = -1;
-            for (size_t i = 0; i < node_list.size(); i++) {
-                if (node_list[i] == adj) {
-                    adjIndex = i;
-                    break;
-                }
-            }
-            
-            if (adjIndex != -1 && !visited[adjIndex]) {
+            size_t adjIndex = nodeIndex(adj);
+            if (adjIndex != std::numeric_limits<size_t>::max() && !visited[adjIndex]) {
                 visited[adjIndex] = true;
                 parent[adjIndex] = current;
-                q.push(adjIndex);
+                q.push(static_cast<int>(adjIndex));
             }
         }
     }
@@ -422,7 +506,9 @@ void Graph::dijkstraPath(unsigned long startIndex, unsigned long endIndex) {
             }
         }
         
-        if (dist[u] == INT_MAX) break;
+        if (u < 0 || dist[u] == INT_MAX) {
+            break;
+        }
         visited[u] = true;
         
         cout << "\rProcessing: " << node_list[u]->getName() << " (cost: " << dist[u] << ")";
@@ -432,20 +518,14 @@ void Graph::dijkstraPath(unsigned long startIndex, unsigned long endIndex) {
         
         vector<Node*> adjacent = getAdjacent(node_list[u]);
         for (Node* adj : adjacent) {
-            int v = -1;
-            for (size_t i = 0; i < node_list.size(); i++) {
-                if (node_list[i] == adj) {
-                    v = i;
-                    break;
-                }
+            size_t v = nodeIndex(adj);
+            if (v == std::numeric_limits<size_t>::max() || visited[v]) {
+                continue;
             }
-            
-            if (v != -1 && !visited[v]) {
-                int weight = getEdgeWeight(node_list[u], node_list[v]);
-                if (dist[u] + weight < dist[v]) {
-                    dist[v] = dist[u] + weight;
-                    parent[v] = u;
-                }
+            int weight = getEdgeWeight(node_list[u], node_list[v]);
+            if (dist[u] + weight < dist[v]) {
+                dist[v] = dist[u] + weight;
+                parent[v] = static_cast<int>(u);
             }
         }
     }

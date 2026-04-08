@@ -1,5 +1,6 @@
-
 #include "edge.h"
+
+#include <string>
 
 Edge::Edge() 
 {
@@ -23,20 +24,19 @@ bool Edge::addNodePair(Node& n1, Node& n2)
     return 1;
 }
 
-vector<Node*> Edge::getNodePair() const 
-{
+const std::vector<Node*>& Edge::getNodePair() const {
     return node_pair;
 }
 
-bool operator==(const Edge& lhs, const Edge& rhs) 
-{
-    bool flag;
-    string a,b,c,d;
-    a = lhs.getNodePair()[0]->getName();
-    b = lhs.getNodePair()[1]->getName();
-    c = rhs.getNodePair()[0]->getName();
-    d = rhs.getNodePair()[1]->getName();
-    flag = ((a == c && b == d) || (a == d && b == c) || ((a == b) && (c == d)));
-
-    return flag;
+bool operator==(const Edge& lhs, const Edge& rhs) {
+    const auto& lp = lhs.getNodePair();
+    const auto& rp = rhs.getNodePair();
+    if (lp.size() < 2 || rp.size() < 2) {
+        return false;
+    }
+    const std::string& a = lp[0]->getName();
+    const std::string& b = lp[1]->getName();
+    const std::string& c = rp[0]->getName();
+    const std::string& d = rp[1]->getName();
+    return (a == c && b == d) || (a == d && b == c);
 }

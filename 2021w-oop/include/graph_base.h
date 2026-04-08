@@ -9,8 +9,6 @@
 #include "edge.h"
 #include "node.h"
 
-using namespace std;
-
 class GraphBase
 {
     public:
@@ -38,8 +36,8 @@ class GraphBase
         virtual unsigned long getNumOfEntries() = 0; // done
 
         // list ops
-        virtual vector<Node*> getNodeList() = 0;
-        virtual vector<Edge*> getEdgeList() = 0;
+        virtual const std::vector<Node*>& getNodeList() const = 0;
+        virtual const std::vector<Edge*>& getEdgeList() const = 0;
 
         // graph ops
         virtual void display() = 0;

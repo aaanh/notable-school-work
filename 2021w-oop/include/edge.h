@@ -7,8 +7,6 @@
 
 #define MAX_NODE_PAIR 2
 
-using namespace std;
-
 class Edge {
     public:
         Edge();
@@ -16,7 +14,7 @@ class Edge {
         ~Edge();
 
         bool addNodePair(Node&, Node&);
-        vector<Node*> getNodePair() const;
+        const std::vector<Node*>& getNodePair() const;
 
         friend bool operator==(const Edge& lhs, const Edge& rhs);
 
