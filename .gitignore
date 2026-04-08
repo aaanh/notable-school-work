@@ -1,3 +1,5 @@
+.DS_Store
+
 **/Debug/**
 **/obj/**/Debug/
 **/obj/Debug/**
