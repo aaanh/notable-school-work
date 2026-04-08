@@ -36,7 +36,7 @@ Dataset is initially cleaned using Python Pandas (./data/cleaner.ipynb) to produ
 - Quick and easy
 
 ```
-docker pull aaanh/meaningful-graph-traversal:latest
+docker build . -t aaanh/meaningful-graph-traversal:latest
 docker run -it aaanh/meaningful-graph-traversal:latest
 ```
 
