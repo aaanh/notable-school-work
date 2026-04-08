@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <utility>
+#include <cstdint>
 
 namespace fs = std::filesystem;
 
@@ -27,6 +28,33 @@ std::string dotEscapeLabel(const std::string& s) {
         out += c;
     }
     return out;
+}
+
+std::size_t hashCountryCode(const std::string& cc) {
+    std::uint32_t h = 2166136261u;
+    for (unsigned char c : cc) {
+        h ^= c;
+        h *= 16777619u;
+    }
+    return static_cast<std::size_t>(h);
+}
+
+const char* countryFillColor(const std::string& cc) {
+    static constexpr const char* kFills[] = {
+        "#dbeafe", "#fce7f3", "#dcfce7", "#fef3c7", "#e9d5ff", "#ffedd5",
+        "#ccfbf1", "#fee2e2", "#e0e7ff", "#fecdd3", "#d9f99d", "#fde68a",
+        "#a5f3fc", "#fbcfe8", "#bbf7d0", "#ddd6fe",
+    };
+    return kFills[hashCountryCode(cc) % (sizeof(kFills) / sizeof(kFills[0]))];
+}
+
+const char* countryBorderColor(const std::string& cc) {
+    static constexpr const char* kBorders[] = {
+        "#2563eb", "#db2777", "#15803d", "#b45309", "#7e22ce", "#c2410c",
+        "#0f766e", "#b91c1c", "#3730a3", "#be123c", "#4d7c0f", "#b45309",
+        "#0e7490", "#be185d", "#166534", "#5b21b6",
+    };
+    return kBorders[hashCountryCode(cc) % (sizeof(kBorders) / sizeof(kBorders[0]))];
 }
 
 } // namespace
@@ -250,13 +278,46 @@ bool Graph::exportDot(unsigned long begin, unsigned long end, const std::string&
     }
 
     out << "graph G {\n";
-    out << "  layout=neato;\n";
-    out << "  overlap=scale;\n";
     out << "  charset=\"UTF-8\";\n";
+    out << "  graph [\n";
+    out << "    layout=dot;\n";
+    out << "    bgcolor=\"#e2e8f0:#f8fafc\";\n";
+    out << "    style=filled;\n";
+    out << "    gradientangle=270;\n";
+    out << "    fontname=\"Helvetica\";\n";
+    out << "    fontsize=14;\n";
+    out << "    fontcolor=\"#0f172a\";\n";
+    out << "    label=\"Company graph (indices " << begin << " - " << end << ")\";\n";
+    out << "    labelloc=t;\n";
+    out << "    labeljust=c;\n";
+    out << "    pad=0.55;\n";
+    out << "    margin=0.25;\n";
+    out << "    splines=curved;\n";
+    out << "    dpi=150;\n";
+    out << "    nodesep=0.6;\n";
+    out << "    ranksep=0.7;\n";
+    out << "  ];\n";
+    out << "  node [\n";
+    out << "    shape=box;\n";
+    out << "    style=\"rounded,filled\";\n";
+    out << "    fontcolor=\"#0f172a\";\n";
+    out << "    fontname=\"Helvetica\";\n";
+    out << "    fontsize=9;\n";
+    out << "    margin=0.08;\n";
+    out << "  ];\n";
+    out << "  edge [\n";
+    out << "    color=\"#64748b\";\n";
+    out << "    penwidth=1.35;\n";
+    out << "  ];\n";
 
     for (size_t i = begin; i <= end; ++i) {
+        const std::string& cc = node_list[i]->getCountryCode();
         out << "  n" << i << " [label=\"" << dotEscapeLabel(node_list[i]->getName())
-            << "\\n(" << dotEscapeLabel(node_list[i]->getCountryCode()) << ")\"];\n";
+            << "\\n(" << dotEscapeLabel(cc) << ")\""
+            << ", fillcolor=\"" << countryFillColor(cc) << "\""
+            << ", color=\"" << countryBorderColor(cc) << "\""
+            << ", penwidth=1.6"
+            << "];\n";
     }
 
     const size_t bad = std::numeric_limits<size_t>::max();
