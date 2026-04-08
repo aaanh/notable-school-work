@@ -8,6 +8,8 @@ Copyright (c) 2020, 2025 Anh Hoang Nguyen <@aaanh>
 
 ## Manifest
 
+- [2025w-algorithm](./2025w-algorithm/) (Lasalle College)
+- [2025f-database-ii](./2025f-database-2/) (Lasalle College)
 - [2025f-infosys](./2025f-infosys/) (Lasalle College)
 - [2025w-algorithm](./2025w-algorithm/) (Lasalle College)
 - [2021w-oop](./2021w-oop/) (Concordia University)
